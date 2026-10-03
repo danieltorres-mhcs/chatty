@@ -1,6 +1,3 @@
--- CHATTY database. Paste ALL of this into Supabase > SQL Editor > Run.
--- STEP FIRST: change CHANGE-THIS-PASSPHRASE below to your own secret words.
-
 create table public.profiles(
  id uuid primary key references auth.users(id) on delete cascade,
  username text not null,
@@ -23,7 +20,7 @@ create index messages_created_idx on public.messages(created_at);
 create table public.invites(code text primary key, created_at timestamptz not null default now(), used_at timestamptz, used_by uuid);
 create table public.requests(id bigint generated always as identity primary key, why text, who text, contact text, created_at timestamptz not null default now());
 create table public.config(key text primary key, value text not null);
-insert into public.config values ('admin_pass','CHANGE-THIS-PASSPHRASE');
+insert into public.config values ('admin_pass','ugh dont look here!! ill just change it in terminal..hmph!');
 
 alter table public.profiles enable row level security;
 alter table public.messages enable row level security;
