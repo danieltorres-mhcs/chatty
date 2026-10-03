@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Chatty</title>
+<meta name="description" content="Chatty is a plain, pseudonymous chat room. Invite only. Messages are kept for two months.">
+<meta property="og:title" content="Chatty">
+<meta property="og:description" content="A plain, pseudonymous chat room. Invite only.">
+<meta property="og:image" content="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='630'%3E%3Crect width='1200' height='630' fill='%23111'/%3E%3Ctext x='80' y='340' font-family='monospace' font-size='96' fill='%23fff'%3EChatty%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23111'/%3E%3Cpath d='M8 10h16v9H15l-5 4v-4H8z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#fff;--fg:#111;--mute:#6b6b6b;--line:#d9d9d9;--err:#b00020;--r:2px;--u:8px;
+ --font:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111;--fg:#eee;--mute:#9a9a9a;--line:#333;--err:#ff7a8a}}
+:root[data-theme="dark"]{--bg:#111;--fg:#eee;--mute:#9a9a9a;--line:#333;--err:#ff7a8a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:14px/24px var(--font)}
+button,input,textarea{font:inherit;color:inherit}
+h1{font-size:16px;line-height:24px;margin:0 0 8px;font-weight:700}
+p{margin:0 0 16px}
+.muted{color:var(--mute)}.small{font-size:12px;line-height:16px}
+.auth{max-width:400px;margin:0 auto;padding:48px 16px}
+.brand{font-weight:700;margin-bottom:32px}
+.field{margin-bottom:16px}
+.field label{display:block;margin-bottom:4px}
+.field .hint{display:block;color:var(--mute);font-size:12px;line-height:16px;margin-top:4px}
+input[type=text],input[type=password],textarea{width:100%;height:40px;padding:8px 12px;background:var(--bg);border:1px solid var(--line);border-radius:var(--r)}
+textarea{height:auto;min-height:40px;resize:none;display:block}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+input[aria-invalid=true]{border-color:var(--err)}
+.chk{display:flex;gap:8px;align-items:center;margin-bottom:16px}
+.btn{height:40px;padding:0 16px;border:1px solid var(--fg);border-radius:var(--r);background:var(--fg);color:var(--bg);cursor:pointer;transition:opacity .12s}
+.btn:hover:not(:disabled){opacity:.85}.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn.ghost:hover:not(:disabled){border-color:var(--fg);opacity:1}
+.btn.block{width:100%}
+.link{background:none;border:0;padding:0;color:var(--fg);text-decoration:underline;cursor:pointer}
+.err{color:var(--err);min-height:24px;margin:0 0 8px}
+.ok{margin-bottom:16px}
+.alt{margin-top:24px}.alt .link{margin-right:16px}
+details{margin-top:48px;border-top:1px solid var(--line);padding-top:16px}
+summary{cursor:pointer;color:var(--mute)}
+details code{background:none;color:var(--fg)}
+details ul{padding-left:16px;margin:8px 0}
+.shell{height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:16px;height:48px;padding:0 16px;border-bottom:1px solid var(--line)}
+.bar .who{display:flex;gap:16px;align-items:center}
+.bar .btn{height:32px;padding:0 12px}
+.log{overflow-y:auto;padding:16px}
+.col{max-width:880px;margin:0 auto}
+.row{display:grid;grid-template-columns:1fr auto;gap:0 16px;padding:4px 0}
+.row .b{white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+.row .n{font-weight:700}
+.row time{color:var(--mute);font-size:12px;line-height:24px;white-space:nowrap;text-align:right}
+.row.sys .b{color:var(--mute)}
+.row.cl .b{color:var(--mute)}
+@media(max-width:560px){.row{grid-template-columns:1fr}.row time{line-height:16px}}
+.sk{height:16px;background:var(--line);border-radius:var(--r);margin:12px 0;animation:p 1.2s ease-in-out infinite}
+@keyframes p{50%{opacity:.4}}
+@media(prefers-reduced-motion:reduce){.sk{animation:none}.btn{transition:none}}
+.foot{border-top:1px solid var(--line);padding:16px}
+.composer{display:grid;grid-template-columns:1fr auto;gap:8px}
+.composer .btn{align-self:start}
+.meta{display:flex;justify-content:space-between;gap:16px;margin-top:8px;min-height:16px}
+.meta .e{color:var(--err)}
+.guest{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.guest strong{letter-spacing:.04em}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px}
+.dlg{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:24px;max-width:400px;width:100%}
+.dlg .btn{margin-top:8px}
+.nm{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .who{gap:8px}
+.row a{color:inherit;text-decoration:underline}
+.row code{border:1px solid var(--line);border-radius:var(--r);padding:0 4px}
+.cb{display:block;white-space:pre;overflow-x:auto;margin:4px 0;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r);font:inherit}
+.q{display:inline-block;color:var(--mute);border-left:2px solid var(--line);padding-left:8px}
+.dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.dh h1{margin:0}
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 0;cursor:pointer;color:var(--mute)}
+.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--fg)}
+input[type=range]{width:100%;accent-color:var(--fg)}
+.pv{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:8px;font-weight:700}
+fieldset{border:0;padding:0;margin:0 0 16px}legend{padding:0;margin-bottom:8px}
+.dlg.set{max-width:480px}
+@media(max-width:560px){input,textarea{font-size:16px}.scrim:has(.set){padding:0}.dlg.set{max-width:none;height:100%;border:0;border-radius:0;overflow-y:auto}}
+@supports(height:100dvh){html,body{height:100dvh}}
+.shell{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
+.bar,.foot{flex:none}
+.pane{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.frame{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px 16px;outline:0;border:0}
+.row .b{white-space:normal;display:block}
+.tx{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:560px){.frame{padding:4px 12px}.foot{padding:8px 12px}.row{grid-template-columns:minmax(0,1fr);padding:8px 0}.row time{text-align:right;line-height:16px;margin-top:2px}}
+.col{width:100%}
+.row{display:flex;gap:16px;align-items:flex-start;padding:4px 0}
+.row .b{flex:1 1 auto;min-width:0;max-width:100%}
+.row time{flex:none;margin-top:0}
+.tx{overflow-wrap:anywhere;word-break:break-word;text-wrap:pretty}
+.cb,.row .b code{max-width:100%}
+@media(max-width:560px){.row{display:block;padding:8px 0}.row .b{display:block}.row time{display:block;margin-top:4px;text-align:right;line-height:16px}}
+.row{display:flex;align-items:baseline;gap:16px;padding:4px 0;max-width:100%}
+.row .b{flex:1 1 0;min-width:0;max-width:100%}
+.row time{flex:none}
+.tx,.row .n{overflow-wrap:anywhere;word-break:break-word}
+.row a{overflow-wrap:anywhere;word-break:break-all}
+@media(max-width:720px),(orientation:portrait){.row{display:block;padding:8px 0}.row .b{display:block;width:100%}.row time{display:block;width:100%;text-align:right;line-height:16px;margin-top:4px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(()=>{
+const CFG={url:'PASTE_PROJECT_URL_HERE',key:'PASTE_ANON_KEY_HERE'};
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const APP=$('#app'),RK='chatty:remember',em=n=>n.toLowerCase()+'@chatty.invalid';
+const pick=()=>localStorage.getItem(RK)==='1'?localStorage:sessionStorage;
+const store={getItem:k=>localStorage.getItem(k)??sessionStorage.getItem(k),setItem:(k,v)=>{localStorage.removeItem(k);sessionStorage.removeItem(k);pick().setItem(k,v)},removeItem:k=>{localStorage.removeItem(k);sessionStorage.removeItem(k)}};
+let sb,view='login',pending=null,guest=false,me=null,users=[],msgs=[],local=[],clearTs=0,timer=null,chan=null,locked=false,S={mute:30,welcome:true,muted:[]},st=null;
+const cfg=()=>S;
+function saveSettings(){if(guest)return;clearTimeout(st);st=setTimeout(()=>sb.rpc('save_settings',{p:S.mute,w:S.welcome,m:S.muted}),400)}
+const sv=saveSettings;
+const norm=m=>({id:m.id,by:m.username,text:m.body,me:m.is_action,ts:Date.parse(m.created_at)});
+async function busy(b,t,fn){const o=b.textContent;b.disabled=true;b.textContent=t;try{await fn()}finally{if(b.isConnected){b.disabled=false;b.textContent=o}}}
+function field(id,label,type,hint,extra=''){return`<div class="field"><label for="${id}">${label}</label><input id="${id}" name="${id}" type="${type}" ${extra}>${hint?`<span class="hint">${hint}</span>`:''}</div>`}
+
+function auth(title,body){document.title=title+' · Chatty';APP.innerHTML=`<main class="auth"><div class="brand">Chatty</div>${body}</main>`;document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));const f=$('input');if(f)f.focus()}
+function bad(id,msg){const e=$('#e');e.textContent=msg;const i=id&&$('#'+id);document.querySelectorAll('input').forEach(x=>x.removeAttribute('aria-invalid'));if(i){i.setAttribute('aria-invalid','true');i.focus()}}
+
+
+function go(v){clearInterval(timer);if(chan){sb.removeChannel(chan);chan=null}view=v;({login,signup,invite,request,chat})[v]()}
+function login(){auth('Log in',`<h1>Log in</h1><p class="muted">Pick up where you left off.</p><form id="f" novalidate>
+${field('u','Username','text','','autocomplete="username" autocapitalize="off"')}${field('p','Password','password','','autocomplete="current-password"')}
+<label class="chk"><input type="checkbox" id="r"> Remember me</label><p class="err" id="e" role="alert"></p><button class="btn block" id="go">Log in</button></form>
+<p class="alt muted">No account? <button class="link" data-go="signup">Create one</button></p>`);
+ $('#f').onsubmit=ev=>{ev.preventDefault();busy($('#go'),'Logging in…',async()=>{
+  localStorage.setItem(RK,$('#r').checked?'1':'0');
+  const{error}=await sb.auth.signInWithPassword({email:em($('#u').value.trim()),password:$('#p').value});
+  if(error)return bad('p','Wrong username or password.');go('chat')})}}
+function signup(){auth('Create account',`<h1>Create account</h1><p class="muted">Pick a name. No email needed.</p><form id="f" novalidate>
+${field('u','Username','text','3 or more characters. Letters, numbers, _ and -','autocomplete="username" autocapitalize="off"')}
+${field('p','Password','password','6 or more characters','autocomplete="new-password"')}${field('c','Confirm password','password','','autocomplete="new-password"')}
+<label class="chk"><input type="checkbox" id="r"> Remember me</label><p class="err" id="e" role="alert"></p><button class="btn block" id="go">Make account</button></form>
+<p class="alt muted">Already have an account? <button class="link" data-go="login">Log in</button></p>`);
+ if(pending)$('#u').value=pending.name;
+ $('#f').onsubmit=ev=>{ev.preventDefault();const n=$('#u').value.trim(),p=$('#p').value,c=$('#c').value;
+  if(!/^[A-Za-z0-9_-]{3,24}$/.test(n))return bad('u','Username must be 3–24 characters: letters, numbers, _ or -.');
+  if(p.length<6)return bad('p','Password must be at least 6 characters.');
+  if(p!==c)return bad('c','Passwords don’t match.');
+  busy($('#go'),'Making account…',async()=>{const{data,error}=await sb.rpc('username_free',{n});
+   if(error)return bad('u','Could not reach the server. Try again.');
+   if(!data)return bad('u','That username is taken.');
+   pending={name:n,pw:p,remember:$('#r').checked};go('invite')})}}
+function invite(){auth('Invite code',`<h1>Wait, do I know you?</h1><p class="muted">Enter an invite code to finish creating <b>${esc(pending.name)}</b>.</p><form id="f" novalidate>
+${field('k','Invite code','text','Format: XXXXX-XXXXX-NORMAL. Codes expire after 3 days.','autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="18"')}
+<p class="err" id="e" role="alert"></p><button class="btn block" id="go">Continue</button></form>
+<p class="alt muted"><button class="link" data-go="request">I don’t have a code</button><button class="link" data-go="signup">Back</button></p>`);
+ const M={format:'That isn’t a valid code format.',missing:'Invite code not found.',used:'This invite code was already used.',expired:'This invite code expired. Codes last 3 days.'};
+ $('#k').oninput=e=>{e.target.value=e.target.value.toUpperCase()};
+ $('#f').onsubmit=ev=>{ev.preventDefault();const k=$('#k').value.trim().toUpperCase();
+  busy($('#go'),'Checking…',async()=>{
+   if(k==='GUEST'){pending=null;guest=true;return go('chat')}
+   const{data:s,error}=await sb.rpc('check_invite',{c:k});
+   if(error)return bad('k','Could not reach the server. Try again.');
+   if(s!=='ok')return bad('k',M[s]||'Invalid code.');
+   localStorage.setItem(RK,pending.remember?'1':'0');
+   const{data,error:e2}=await sb.auth.signUp({email:em(pending.name),password:pending.pw,options:{data:{username:pending.name,invite:k}}});
+   if(e2)return bad('k','Could not create the account. Try another username or code.');
+   if(!data.session)return bad('k','Account made, but Supabase wants email confirmation. Turn off "Confirm email" (see the steps).');
+   pending=null;go('chat')})}}
+function request(){auth('Request an invite',`<h1>Request an invite</h1><p class="muted">A person reads every request. If approved, a code is sent to your contact.</p><form id="f" novalidate>
+<div class="field"><label for="w">Why do you want to join?</label><textarea id="w" rows="3"></textarea></div>
+${field('a','Who are you?','text','A name or handle is fine','autocomplete="off"')}${field('t','Where can we contact you?','text','Email, handle, anything that reaches you','autocomplete="off"')}
+<p class="err" id="e" role="alert"></p><button class="btn block" id="go">Send request</button></form>
+<p class="alt muted"><button class="link" data-go="invite">Back to invite code</button></p>`);
+ $('#f').onsubmit=ev=>{ev.preventDefault();const w=$('#w').value.trim(),a=$('#a').value.trim(),t=$('#t').value.trim();
+  if(!w)return bad('w','Tell us why you want to join.');if(!a)return bad('a','Tell us who you are.');if(!t)return bad('t','Add a way to reach you.');
+  busy($('#go'),'Sending…',async()=>{const{error}=await sb.rpc('send_request',{w,a,t});if(error)return bad('w','Could not send. Try again.');
+   $('#f').outerHTML=`<p class="ok">Request sent. If approved, a code will be sent to <b>${esc(t)}</b>.</p><button class="btn ghost" id="b">Back to invite code</button>`;$('#b').onclick=()=>go('invite')})}}
+const fmt=ts=>{const d=new Date(ts),o={month:'short',day:'numeric',hour:'numeric',minute:'2-digit'};if(d.getFullYear()!==new Date().getFullYear())o.year='numeric';return d.toLocaleString(undefined,o)};
+const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+function noon(){const d=new Date();d.setHours(12,0,0,0);if(Date.now()<d.getTime())d.setDate(d.getDate()-1);return d.getTime()}
+const delay=n=>n<=15?.2:n<=50?.5:n<=150?1:n<=400?2:n<=800?4:8;
+
+const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches};
+function applyTheme(t){if(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('chatty:theme',t)}catch(e){}}}
+function nameColor(n){let h=0;for(const c of n)h=(Math.imul(h,31)+c.charCodeAt(0))>>>0;
+ return`hsl(${(Math.imul(h,2654435761)>>>0)%360} ${Math.round(65*(1-cfg().mute/100))}% ${isDark()?72:34}%)`}
+function md(s){const bl=[],ph=h=>{bl.push(h);return'\u0000'+(bl.length-1)+'\u0000'},A=u=>`<a href="${u}" target="_blank" rel="noopener noreferrer nofollow">`;
+ s=esc(s).replace(/\n?```\n?([\s\S]*?)\n?```\n?/g,(_,c)=>ph(`<pre class="cb">${c}</pre>`)).replace(/`([^`\n]+)`/g,(_,c)=>ph(`<code>${c}</code>`));
+ s=s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,(_,t,u)=>ph(A(u)+t+'</a>')).replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,(_,p,u)=>p+ph(A(u)+u+'</a>'))
+  .replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g,'$1<i>$2</i>').replace(/~~([^~\n]+)~~/g,'<s>$1</s>')
+  .replace(/^&gt; ?(.*)$/gm,'<span class="q">$1</span>');
+ return s.replace(/\u0000(\d+)\u0000/g,(_,i)=>bl[i])}
+
+function renderLog(stick){const l=$('#log');if(!l)return;const near=stick||l.scrollHeight-l.scrollTop-l.clientHeight<80,from=Math.max(guest?noon():0,clearTs);
+ const nk=(n,t)=>`<span class="n" style="color:${nameColor(n)}">${t}</span>`;
+ const all=msgs.filter(m=>!S.muted.includes(m.by)).concat(local).filter(m=>m.ts>=from).sort((a,b)=>a.ts-b.ts);
+ l.innerHTML=`<div class="col">${all.map(m=>`<div class="row ${m.cls||''}"><div class="b">${m.cls?`<span class="tx">* ${esc(m.text)}</span>`:nk(m.by,m.me?'* '+esc(m.by):'&lt;'+esc(m.by)+'&gt;')+` <span class="tx">${md(m.text)}</span>`}</div><time class="t" datetime="${new Date(m.ts).toISOString()}" title="${tz}">${fmt(m.ts)}</time></div>`).join('')}</div>`;
+ if(near)l.scrollTop=l.scrollHeight}
+async function logout(){await sb.auth.signOut();guest=false;me=null;go('login')}
+async function pollGuest(){const{data}=await sb.rpc('guest_messages',{since:new Date(noon()).toISOString()});if(data){msgs=data.map(norm);renderLog()}}
+async function chat(){document.title='Chat · Chatty';local=[];msgs=[];clearTs=0;S={mute:30,welcome:true,muted:[]};let prev=null;
+ if(!guest){const{data:{session}}=await sb.auth.getSession();if(!session)return go('login');
+  const{data:p}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+  if(!p){await sb.auth.signOut();return go('login')}
+  me=p;S={mute:p.mute_pct,welcome:p.show_welcome,muted:p.muted||[]}}
+ const g=guest;
+ APP.innerHTML=`<div class="shell"><header class="bar"><strong>Chatty</strong><div class="who"><span class="muted nm">${esc(g?'guest':me.username)}</span><button class="btn ghost" id="set">Settings</button>${g?'':'<button class="btn ghost" id="out">Log out</button>'}</div></header>
+ <main class="pane"><div class="frame" id="log" role="log" aria-live="polite" aria-label="Messages"><div class="col"><div class="sk" style="width:60%"></div><div class="sk" style="width:80%"></div><div class="sk" style="width:45%"></div><div class="sk" style="width:70%"></div></div></div></main>
+ <footer class="foot"><div class="col">${g?`<div class="guest"><strong>GUEST MODE</strong><button class="btn ghost" id="out">Log out</button></div>`:
+ `<div class="composer"><textarea id="ta" rows="1" aria-label="Message" placeholder="Message, or /help"></textarea><button class="btn" id="send">Send</button></div><div class="meta small muted"><span id="note" role="status"></span><span id="cnt">0/1500</span></div>`}</div></footer></div>`;
+ $('#out').onclick=logout;$('#set').onclick=settings;if(!g)composer();
+ try{if(g){await pollGuest();timer=setInterval(pollGuest,10000)}else{
+  prev=(await sb.rpc('touch_login')).data;
+  const[u,m]=await Promise.all([sb.from('profiles').select('username,created_at'),sb.from('messages').select('*').order('created_at',{ascending:false}).limit(300)]);
+  users=u.data||[];msgs=(m.data||[]).reverse().map(norm);
+  chan=sb.channel('msgs').on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},x=>{if(!msgs.some(q=>q.id===x.new.id)){msgs.push(norm(x.new));renderLog()}})
+   .on('postgres_changes',{event:'DELETE',schema:'public',table:'messages'},x=>{msgs=msgs.filter(q=>q.id!==x.old.id);renderLog()}).subscribe()}}
+ catch(e){local.push({cls:'sys',text:'Could not load messages. Reload to try again.',ts:Date.now()})}
+ if(view!=='chat')return;
+ if(S.welcome)local.push({cls:'sys',text:'Welcome to Chatty!'+(g?'':' Last login - '+(prev?fmt(Date.parse(prev)):'first visit')),ts:Date.now()});
+ renderLog(true);if(g)popup();else $('#ta').focus()}
+function modal(html,cls){const d=document.createElement('div');d.className='scrim';d.innerHTML=`<div class="dlg ${cls||''}" role="dialog" aria-modal="true">${html}</div>`;document.body.appendChild(d);
+ const c=()=>{d.remove();const s=$('#set');if(s)s.focus()};d.onkeydown=e=>{if(e.key==='Escape')c()};d.onclick=e=>{if(e.target===d)c()};return[d,c]}
+function popup(){const[d,c]=modal(`<h1>Guest mode</h1><p>You can only view messages. Today’s messages are shown and reset at 12:00 pm.</p><button class="btn" id="ok">Got it</button>`);$('#ok',d).onclick=c;$('#ok',d).focus()}
+function settings(){const names=['ada','linus','grace','mx','tove'];
+ const[d,c]=modal(`<div class="dh"><h1>Settings</h1><button class="btn ghost" id="x">Close</button></div>
+ <div class="tabs" role="tablist"><button role="tab" id="t1" aria-selected="true" aria-controls="p1">Personalization</button><button role="tab" id="t2" aria-selected="false" aria-controls="p2" tabindex="-1">General</button></div>
+ <section id="p1" role="tabpanel" aria-labelledby="t1"><div class="field"><label for="mu">Name color muting: <b id="mv"></b></label><input id="mu" type="range" min="0" max="100" step="5"><span class="hint">0% is vibrant. 100% is greyscale.</span><div class="pv" id="pv"></div></div>
+ <fieldset><legend>Theme</legend><label class="chk"><input type="radio" name="th" value="light"> Light</label><label class="chk"><input type="radio" name="th" value="dark"> Dark</label></fieldset></section>
+ <section id="p2" role="tabpanel" aria-labelledby="t2" hidden><label class="chk"><input type="checkbox" id="wl"> Show the welcome message after login</label><p class="small muted">The message includes your last login date and time.</p></section>`,'set');
+ const mu=$('#mu',d),pv=()=>{$('#mv',d).textContent=cfg().mute+'%';$('#pv',d).innerHTML=names.map(n=>`<span style="color:${nameColor(n)}">${n}</span>`).join('')};
+ mu.value=cfg().mute;pv();$('#wl',d).checked=cfg().welcome;d.querySelector(`input[name=th][value=${isDark()?'dark':'light'}]`).checked=true;
+ mu.oninput=()=>{cfg().mute=+mu.value;sv();pv();renderLog()};
+ d.querySelectorAll('input[name=th]').forEach(r=>r.onchange=()=>{applyTheme(r.value);pv();renderLog()});
+ $('#wl',d).onchange=e=>{cfg().welcome=e.target.checked;sv()};
+ const tabs=[...d.querySelectorAll('[role=tab]')],pick=t=>{tabs.forEach(b=>{const on=b===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;$('#'+b.getAttribute('aria-controls'),d).hidden=!on});t.focus()};
+ tabs.forEach((t,i)=>{t.onclick=()=>pick(t);t.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft')pick(tabs[(i+1)%2])}});
+ $('#x',d).onclick=c;$('#x',d).focus()}
+
+function composer(){const ta=$('#ta'),btn=$('#send'),note=$('#note'),cnt=$('#cnt');
+ const sys=t=>{local.push({cls:'cl',text:t,ts:Date.now()});renderLog(true)};
+ const upd=()=>{const n=ta.value.trim().length;cnt.textContent=`${n}/1500`+(n>=2?` · ${delay(n)}s delay`:'');ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,128)+'px'};
+ const msg=(t,e)=>{note.textContent=t;note.className=e?'e':''};
+ function lock(n){locked=true;btn.disabled=true;btn.textContent='Sending…';setTimeout(()=>{locked=false;btn.disabled=false;btn.textContent='Send';ta.focus()},delay(n)*1000)}
+ async function post(t,act){if(t.length<2||t.length>1500){msg('Messages must be 2–1500 characters.',true);return false}
+  lock(t.length);const{data,error}=await sb.rpc('post_message',{b:t,act:!!act});
+  if(error){msg(/slow_down/.test(error.message)?'Too fast. Wait a moment.':'Could not send. Try again.',true);return false}
+  if(data&&!msgs.some(m=>m.id===data.id)){msgs.push(norm(data));renderLog(true)}return true}
+ function cmd(t){const p=t.slice(1).trim().split(/\s+/),k=p[0].toLowerCase(),a=p[1],rest=t.slice(1).trim().slice(p[0].length).trim();
+  const find=n=>users.find(y=>y.username.toLowerCase()===(n||'').toLowerCase());
+  switch(k){
+  case 'help':['Commands (only you see these):','/me <action>     post an action','/shrug [text]     add ¯\\_(ツ)_/¯','/users           list all users','/whois <user>    member since and recent message count','/search <text>   find recent messages','/mute <user>     hide a user’s messages','/unmute <user>   show a user again','/mutelist        list users you muted','/time            your local time and timezone','/clear           clear your view (reload restores it)','/settings        open settings','/logout          log out','/help            show this list'].forEach(sys);return;
+  case 'me':if(rest.length<2)return sys('Usage: /me <action>');post(rest,true);return;
+  case 'shrug':post((rest+' ¯\\_(ツ)_/¯').trim());return;
+  case 'users':sys('Users: '+users.map(x=>x.username).join(', '));return;
+  case 'whois':{const x=find(a);if(!x)return sys(a?`No user named ${a}.`:'Usage: /whois <user>');sys(`${x.username} - member since ${fmt(Date.parse(x.created_at))}, ${msgs.filter(m=>m.by===x.username).length} recent messages`);return}
+  case 'search':{if(!rest)return sys('Usage: /search <text>');const q=rest.toLowerCase(),r=msgs.filter(m=>!S.muted.includes(m.by)&&m.text.toLowerCase().includes(q)).slice(-5);
+   if(!r.length)return sys('No matches.');sys(`Last ${r.length} match${r.length>1?'es':''}:`);r.forEach(m=>sys(`<${m.by}> ${m.text.slice(0,80)} (${fmt(m.ts)})`));return}
+  case 'time':sys(`${new Date().toLocaleString()} (${tz})`);return;
+  case 'clear':clearTs=Date.now();renderLog(true);sys('View cleared.');return;
+  case 'settings':settings();return;
+  case 'logout':logout();return;
+  case 'mutelist':sys(S.muted.length?'Muted: '+S.muted.join(', '):'You haven’t muted anyone.');return;
+  case 'mute':case 'unmute':{if(!a)return sys(`Usage: /${k} <user>`);const x=find(a);if(!x)return sys(`No user named ${a}.`);
+   if(x.username===me.username)return sys('You can’t mute yourself.');const n=x.username;
+   if(k==='mute'){if(S.muted.includes(n))return sys(`${n} is already muted.`);S.muted=[...S.muted,n];sys(`Muted ${n}.`)}
+   else{if(!S.muted.includes(n))return sys(`${n} isn’t muted.`);S.muted=S.muted.filter(y=>y!==n);sys(`Unmuted ${n}.`)}
+   sv();renderLog(true);return}
+  default:sys(`Unknown command /${p[0]}. Type /help.`)}}
+ async function send(){if(locked)return;const t=ta.value.trim();msg('');
+  if(t.startsWith('/')){cmd(t);if(view==='chat'){ta.value='';upd()}return}
+  if(await post(t)){ta.value='';upd()}}
+ ta.oninput=upd;ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}};btn.onclick=send}
+
+try{applyTheme(localStorage.getItem('chatty:theme'))}catch(e){}
+if(CFG.url.includes('PASTE')){auth('Setup needed','<h1>Setup needed</h1><p>Open index.html in a text editor and paste your Supabase project URL and anon key at the top of the script.</p>')}
+else{sb=supabase.createClient(CFG.url,CFG.key,{auth:{storage:store,persistSession:true,autoRefreshToken:true}});
+ sb.auth.getSession().then(({data})=>go(data.session?'chat':'login'))}
+})();
+</script>
+</body>
+</html>
