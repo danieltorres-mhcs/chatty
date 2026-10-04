@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatty admin</title><meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23111'/%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#fff;--fg:#111;--mute:#6b6b6b;--line:#d9d9d9;--err:#b00020}
+@media(prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--mute:#9a9a9a;--line:#333;--err:#ff7a8a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/24px ui-monospace,Menlo,Consolas,monospace}
+main{max-width:640px;margin:0 auto;padding:32px 16px}h1{font-size:16px;margin:0 0 16px}h2{font-size:14px;margin:32px 0 8px}
+input,button{font:inherit;color:inherit;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:2px;background:var(--bg)}
+input{width:100%;margin-bottom:8px}button{background:var(--fg);color:var(--bg);border-color:var(--fg);cursor:pointer;margin:0 8px 8px 0}
+button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid var(--line);padding:12px;margin:8px 0}.e{color:var(--err)}
+</style></head><body><main>
+<!-- Cheeky boy! 😜 -->
+<h1>Chatty admin</h1>
+<input id="p" type="password" placeholder="Admin passphrase" autocomplete="off">
+<button id="inv">Make invite code</button><button id="ref">Refresh lists</button>
+<label style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="cf" style="width:auto;height:auto;margin:0"> Ask before deleting or banning</label>
+<p id="msg" role="status"></p>
+<h2>Delete a message (number from the list below)</h2><input id="mid" inputmode="numeric" placeholder="Message number"><button id="del">Delete message</button>
+<h2>Ban a user (deletes their account and messages)</h2><input id="bn" placeholder="Username"><button id="ban">Ban user</button>
+<h2>Unused invite codes</h2><pre id="li">-</pre><h2>Requests</h2><div id="lr">-</div><h2>Users</h2><pre id="lu">-</pre>
+<h2>Recent messages</h2><div id="lm">-</div>
+</main><script>
+const URL_='https://pgpgmvtsfzvzcvblujpq.supabase.co',KEY='sb_publishable_ju9WU0bLGsWUBwqnFaWcBg_FizBzr1k';
+const sb=supabase.createClient(URL_,KEY,{auth:{persistSession:false}}),$=s=>document.querySelector(s);
+const PK='chatty:admin-pass';
+try{$('#p').value=localStorage.getItem(PK)||''}catch(e){}
+$('#p').oninput=()=>{try{localStorage.setItem(PK,$('#p').value)}catch(e){}};
+  const CK='chatty:admin-confirm';
+   try{$('#cf').checked=localStorage.getItem(CK)!=='0'}catch(e){$('#cf').checked=true}
+   $('#cf').onchange=()=>{try{localStorage.setItem(CK,$('#cf').checked?'1':'0')}catch(e){}};
+   const ask=t=>!$('#cf').checked||confirm(t);
+const say=(t,e)=>{$('#msg').textContent=t;$('#msg').className=e?'e':''};
+async function run(fn,name,args){const{data,error}=await sb.rpc(fn,{p:$('#p').value,...args});if(error){say(error.message,1);return null}say(name+' done.');return data}
+async function refresh(){const d=await run('admin_overview','Refreshed');if(!d)return;
+ $('#li').textContent=d.invites.map(i=>i.code+'  (made '+new Date(i.created_at).toLocaleString()+')').join('\n')||'None';
+ const lr=$('#lr');lr.textContent=d.requests.length?'':'None';d.requests.forEach(r=>{const b=document.createElement('pre');b.textContent=new Date(r.created_at).toLocaleString()+'\nWHO: '+r.who+'\nCONTACT: '+r.contact+'\nWHY: '+r.why+'\n';const x=document.createElement('button');x.textContent='Dismiss';x.onclick=()=>run('admin_delete_request','Dismissed',{rid:r.id}).then(refresh);b.appendChild(x);lr.appendChild(b)});
+    const lm=$('#lm');lm.textContent=d.messages.length?'':'None';d.messages.forEach(m=>{const b=document.createElement('pre');b.textContent='#'+m.id+' <'+m.username+'> '+m.body+'\n';const x=document.createElement('button');x.textContent='Delete';x.onclick=()=>ask('Delete message #'+m.id+'?')&&run('admin_delete_message','Deleted',{mid:m.id}).then(refresh);b.appendChild(x);lm.appendChild(b)})}
+$('#inv').onclick=async()=>{const c=await run('admin_new_invite','Invite made');if(c){say('New code (valid 3 days): '+c);refresh()}};
+$('#ref').onclick=refresh;
+$('#del').onclick=()=>ask('Delete message #'+$('#mid').value+'?')&&run('admin_delete_message','Delete',{mid:+$('#mid').value});
+if($('#p').value)refresh();
+$('#ban').onclick=()=>$('#bn').value&&ask('Ban '+$('#bn').value+'?')&&run('admin_ban','Ban',{n:$('#bn').value}).then(refresh);
+</script></body></html>
