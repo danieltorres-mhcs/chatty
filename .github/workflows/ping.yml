@@ -1,0 +1,13 @@
+name: keep-alive
+on:
+  schedule:
+    - cron: '0 12 */3 * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s -X POST "https://pgpgmvtsfzvzcvblujpq.supabase.co/rest/v1/rpc/check_invite" \
+            -H "apikey: sb_publishable_ju9WU0bLGsWUBwqnFaWcBg_FizBzr1k" -H "Content-Type: application/json" \
+            -d '{"c":"PING"}'
