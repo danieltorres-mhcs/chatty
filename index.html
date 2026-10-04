@@ -115,10 +115,10 @@ fieldset{border:0;padding:0;margin:0 0 16px}legend{padding:0;margin-bottom:8px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (()=>{
-const CFG={url:'https://pgpgmvtsfzvzcvblujpq.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncGdtdnRzZnp2emN2Ymx1anBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMjc3NjMsImV4cCI6MjEwNjYwMzc2M30.shTG9tCiLI-kk9A7bxPvwACe24eit6wvAmMvNN-YKCM'};
+const CFG={url:'https://pgpgmvtsfzvzcvblujpq.supabase.co',key:'sb_publishable_ju9WU0bLGsWUBwqnFaWcBg_FizBzr1k'};
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const APP=$('#app'),RK='chatty:remember',em=n=>n.toLowerCase()+'@chatty-members.com'
+const APP=$('#app'),RK='chatty:remember',em=n=>n.toLowerCase()+'@chatty-members.com';
 const pick=()=>localStorage.getItem(RK)==='1'?localStorage:sessionStorage;
 const store={getItem:k=>localStorage.getItem(k)??sessionStorage.getItem(k),setItem:(k,v)=>{localStorage.removeItem(k);sessionStorage.removeItem(k);pick().setItem(k,v)},removeItem:k=>{localStorage.removeItem(k);sessionStorage.removeItem(k)}};
 let sb,view='login',pending=null,guest=false,me=null,users=[],msgs=[],local=[],clearTs=0,timer=null,chan=null,locked=false,S={mute:30,welcome:true,muted:[]},st=null;
@@ -137,8 +137,9 @@ function go(v){clearInterval(timer);if(chan){sb.removeChannel(chan);chan=null}vi
 function login(){auth('Log in',`<h1>Log in</h1><p class="muted">Pick up where you left off.</p><form id="f" novalidate>
 ${field('u','Username','text','','autocomplete="username" autocapitalize="off"')}${field('p','Password','password','','autocomplete="current-password"')}
 <label class="chk"><input type="checkbox" id="r"> Remember me</label><p class="err" id="e" role="alert"></p><button class="btn block" id="go">Log in</button></form>
-<p class="alt muted">No account? <button class="link" data-go="signup">Create one</button></p>   <p class="muted" style="margin-top:8px">Just looking? <button class="link" id="gst">View as guest</button></p>`);
-$('#gst').onclick=()=>{guest=true;go('chat')};
+<p class="alt muted">No account? <button class="link" data-go="signup">Create one</button></p>
+<p class="muted" style="margin-top:8px"><button class="link" id="gst">Just looking? View as guest</button></p>`);
+ $('#gst').onclick=()=>{guest=true;go('chat')};
  $('#f').onsubmit=ev=>{ev.preventDefault();busy($('#go'),'Logging in…',async()=>{
   localStorage.setItem(RK,$('#r').checked?'1':'0');
   const{error}=await sb.auth.signInWithPassword({email:em($('#u').value.trim()),password:$('#p').value});
@@ -154,7 +155,7 @@ ${field('p','Password','password','6 or more characters','autocomplete="new-pass
   if(p.length<6)return bad('p','Password must be at least 6 characters.');
   if(p!==c)return bad('c','Passwords don’t match.');
   busy($('#go'),'Making account…',async()=>{const{data,error}=await sb.rpc('username_free',{n});
-   if(error)return bad('u','Could not reach the server. Try again.');
+   if(error)return bad('u','Server problem: '+error.message);
    if(!data)return bad('u','That username is taken.');
    pending={name:n,pw:p,remember:$('#r').checked};go('invite')})}}
 function invite(){auth('Invite code',`<h1>Wait, do I know you?</h1><p class="muted">Enter an invite code to finish creating <b>${esc(pending.name)}</b>.</p><form id="f" novalidate>
@@ -167,7 +168,7 @@ ${field('k','Invite code','text','Format: XXXXX-XXXXX-NORMAL. Codes expire after
   busy($('#go'),'Checking…',async()=>{
    if(k==='GUEST'){pending=null;guest=true;return go('chat')}
    const{data:s,error}=await sb.rpc('check_invite',{c:k});
-   if(error)return bad('k','Could not reach the server. Try again.');
+   if(error)return bad('k','Server problem: '+error.message);
    if(s!=='ok')return bad('k',M[s]||'Invalid code.');
    localStorage.setItem(RK,pending.remember?'1':'0');
    const{data,error:e2}=await sb.auth.signUp({email:em(pending.name),password:pending.pw,options:{data:{username:pending.name,invite:k}}});
@@ -183,7 +184,7 @@ ${field('a','Who are you?','text','A name or handle is fine','autocomplete="off"
   if(!w)return bad('w','Tell us why you want to join.');if(!a)return bad('a','Tell us who you are.');if(!t)return bad('t','Add a way to reach you.');
   busy($('#go'),'Sending…',async()=>{const{error}=await sb.rpc('send_request',{w,a,t});if(error)return bad('w','Could not send. Try again.');
    $('#f').outerHTML=`<p class="ok">Request sent. If approved, a code will be sent to <b>${esc(t)}</b>.</p>`;})}}
- const fmt=ts=>{const d=new Date(ts),o={month:'short',day:'numeric',hour:'numeric',minute:'2-digit'};if(d.getFullYear()!==new Date().getFullYear())o.year='numeric';return d.toLocaleString(undefined,o)};
+const fmt=ts=>{const d=new Date(ts),o={month:'short',day:'numeric',hour:'numeric',minute:'2-digit'};if(d.getFullYear()!==new Date().getFullYear())o.year='numeric';return d.toLocaleString(undefined,o)};
 const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
 function noon(){const d=new Date();d.setHours(12,0,0,0);if(Date.now()<d.getTime())d.setDate(d.getDate()-1);return d.getTime()}
 const delay=n=>n<=15?.2:n<=50?.5:n<=150?1:n<=400?2:n<=800?4:8;
@@ -217,12 +218,12 @@ async function chat(){document.title='Chat · Chatty';local=[];msgs=[];clearTs=0
  <footer class="foot"><div class="col">${g?`<div class="guest"><strong>GUEST MODE</strong><button class="btn ghost" id="out">Log out</button></div>`:
  `<div class="composer"><textarea id="ta" rows="1" aria-label="Message" placeholder="Message, or /help"></textarea><button class="btn" id="send">Send</button></div><div class="meta small muted"><span id="note" role="status"></span><span id="cnt">0/1500</span></div>`}</div></footer></div>`;
  $('#out').onclick=logout;$('#set').onclick=settings;if(!g)composer();
- try{if(g){await pollGuest();timer=setInterval(pollGuest,10000)}else{
+ try{if(g){await pollGuest();timer=setInterval(pollGuest,30000)}else{
   prev=(await sb.rpc('touch_login')).data;
   const[u,m]=await Promise.all([sb.from('profiles').select('username,created_at'),sb.from('messages').select('*').order('created_at',{ascending:false}).limit(300)]);
-  users=u.data||[];msgs=(m.data||[]).reverse().map(norm);
+  users=u.data||[];msgs=(m.data||[]).reverse().map(norm)}
   chan=sb.channel('msgs').on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},x=>{if(!msgs.some(q=>q.id===x.new.id)){msgs.push(norm(x.new));renderLog()}})
-   .on('postgres_changes',{event:'DELETE',schema:'public',table:'messages'},x=>{msgs=msgs.filter(q=>q.id!==x.old.id);renderLog()}).subscribe()}}
+   .on('postgres_changes',{event:'DELETE',schema:'public',table:'messages'},x=>{msgs=msgs.filter(q=>q.id!==x.old.id);renderLog()}).subscribe()}
  catch(e){local.push({cls:'sys',text:'Could not load messages. Reload to try again.',ts:Date.now()})}
  if(view!=='chat')return;
  if(S.welcome)local.push({cls:'sys',text:'Welcome to Chatty!'+(g?'':' Last login - '+(prev?fmt(Date.parse(prev)):'first visit')),ts:Date.now()});
