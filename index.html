@@ -137,7 +137,8 @@ function go(v){clearInterval(timer);if(chan){sb.removeChannel(chan);chan=null}vi
 function login(){auth('Log in',`<h1>Log in</h1><p class="muted">Pick up where you left off.</p><form id="f" novalidate>
 ${field('u','Username','text','','autocomplete="username" autocapitalize="off"')}${field('p','Password','password','','autocomplete="current-password"')}
 <label class="chk"><input type="checkbox" id="r"> Remember me</label><p class="err" id="e" role="alert"></p><button class="btn block" id="go">Log in</button></form>
-<p class="alt muted">No account? <button class="link" data-go="signup">Create one</button></p>`);
+<p class="alt muted">No account? <button class="link" data-go="signup">Create one</button></p>   <p class="muted" style="margin-top:8px"><button class="link" id="gst">Just looking? View as guest</button></p>`);
+$('#gst').onclick=()=>{guest=true;go('chat')};
  $('#f').onsubmit=ev=>{ev.preventDefault();busy($('#go'),'Logging in…',async()=>{
   localStorage.setItem(RK,$('#r').checked?'1':'0');
   const{error}=await sb.auth.signInWithPassword({email:em($('#u').value.trim()),password:$('#p').value});
