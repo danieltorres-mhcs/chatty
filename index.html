@@ -182,7 +182,7 @@ ${field('a','Who are you?','text','A name or handle is fine','autocomplete="off"
  $('#f').onsubmit=ev=>{ev.preventDefault();const w=$('#w').value.trim(),a=$('#a').value.trim(),t=$('#t').value.trim();
   if(!w)return bad('w','Tell us why you want to join.');if(!a)return bad('a','Tell us who you are.');if(!t)return bad('t','Add a way to reach you.');
   busy($('#go'),'Sending…',async()=>{const{error}=await sb.rpc('send_request',{w,a,t});if(error)return bad('w','Could not send. Try again.');
-   $('#f').outerHTML=`<p class="ok">Request sent. If approved, a code will be sent to <b>${esc(t)}</b>.</p><button class="btn ghost" id="b">Back to invite code</button>`;$('#b').onclick=()=>go('invite')})}}
+   $('#f').outerHTML=`<p class="ok">Request sent. If approved, a code will be sent to <b>${esc(t)}</b>.</p></b>.</p><button class="btn ghost" id="b">Back to invite code</button>`;$('#b').onclick=()=>go('invite')`;})}}
 const fmt=ts=>{const d=new Date(ts),o={month:'short',day:'numeric',hour:'numeric',minute:'2-digit'};if(d.getFullYear()!==new Date().getFullYear())o.year='numeric';return d.toLocaleString(undefined,o)};
 const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
 function noon(){const d=new Date();d.setHours(12,0,0,0);if(Date.now()<d.getTime())d.setDate(d.getDate()-1);return d.getTime()}
