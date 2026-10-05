@@ -15,7 +15,7 @@ button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;borde
 <!-- Cheeky boy! 😜 -->
 <h1>Chatty admin</h1>
 <input id="p" type="password" placeholder="Admin passphrase" autocomplete="off">
-<button id="inv">Make invite code</button><button id="ref">Refresh lists</button>
+<button id="inv">Make invite code</button><button id="invt">Make temp invite (5 days)</button><button id="ref">Refresh lists</button>
 <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="cf" style="width:auto;height:auto;margin:0"> Ask before deleting or banning</label>
 <p id="msg" role="status"></p>
 <h2>Delete a message (number from the list below)</h2><input id="mid" inputmode="numeric" placeholder="Message number"><button id="del">Delete message</button>
@@ -39,6 +39,7 @@ async function refresh(){const d=await run('admin_overview','Refreshed');if(!d)r
  const lr=$('#lr');lr.textContent=d.requests.length?'':'None';d.requests.forEach(r=>{const b=document.createElement('pre');b.textContent=new Date(r.created_at).toLocaleString()+'\nWHO: '+r.who+'\nCONTACT: '+r.contact+'\nWHY: '+r.why+'\n';const x=document.createElement('button');x.textContent='Dismiss';x.onclick=()=>run('admin_delete_request','Dismissed',{rid:r.id}).then(refresh);b.appendChild(x);lr.appendChild(b)});
     const lm=$('#lm');lm.textContent=d.messages.length?'':'None';d.messages.forEach(m=>{const b=document.createElement('pre');b.textContent='#'+m.id+' <'+m.username+'> '+m.body+'\n';const x=document.createElement('button');x.textContent='Delete';x.onclick=()=>ask('Delete message #'+m.id+'?')&&run('admin_delete_message','Deleted',{mid:m.id}).then(refresh);b.appendChild(x);lm.appendChild(b)})}
 $('#inv').onclick=async()=>{const c=await run('admin_new_invite','Invite made');if(c){say('New code (valid 3 days): '+c);refresh()}};
+$('#invt').onclick=async()=>{const c=await run('admin_new_temp_invite','Temp invite made');if(c){await refresh();say('New temp code (5 days, 4 accounts per device/network): '+c)}};
 $('#ref').onclick=refresh;
 $('#del').onclick=()=>ask('Delete message #'+$('#mid').value+'?')&&run('admin_delete_message','Delete',{mid:+$('#mid').value});
 if($('#p').value)refresh();
