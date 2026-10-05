@@ -134,6 +134,7 @@ function saveSettings(){if(guest)return;clearTimeout(st);st=setTimeout(()=>sb.rp
 const sv=saveSettings;
 const MENTION=/(^|[^A-Za-z0-9_@-])@([A-Za-z0-9_-]{3,24})(?![A-Za-z0-9_-])/g;
 const pingsIn=t=>{const q=new Set();for(const m of t.matchAll(new RegExp(MENTION.source,'g'))){const u=users.find(x=>x.username.toLowerCase()===m[2].toLowerCase());if(u)q.add(u.username)}return q.size};
+const tsOn=()=>{try{return localStorage.getItem('chatty:ts')!=='0'}catch(e){return true}};
 const norm=m=>({id:m.id,by:m.username,text:m.body,me:m.is_action,ts:Date.parse(m.created_at)});
 async function busy(b,t,fn){const o=b.textContent;b.disabled=true;b.textContent=t;try{await fn()}finally{if(b.isConnected){b.disabled=false;b.textContent=o}}}
 function field(id,label,type,hint,extra=''){return`<div class="field"><label for="${id}">${label}</label><input id="${id}" name="${id}" type="${type}" ${extra}>${hint?`<span class="hint">${hint}</span>`:''}</div>`}
@@ -218,7 +219,7 @@ function md(s){const bl=[],ph=h=>{bl.push(h);return'\u0000'+(bl.length-1)+'\u000
 function renderLog(stick){const l=$('#log');if(!l)return;const near=stick||l.scrollHeight-l.scrollTop-l.clientHeight<80,from=Math.max(guest?noon():0,clearTs);
  const nk=(n,t)=>`<span class="n" style="color:${nameColor(n)}">${t}</span>`;
  const all=msgs.filter(m=>!S.muted.includes(m.by)).concat(local).filter(m=>m.ts>=from).sort((a,b)=>a.ts-b.ts);
- l.innerHTML=`<div class="col">${all.map(m=>`<div class="row ${m.cls||''}"><div class="b">${m.cls?`<span class="tx">* ${esc(m.text)}</span>`:nk(m.by,m.me?'* '+esc(m.by):'&lt;'+esc(m.by)+'&gt;')+` <span class="tx">${md(m.text)}</span>`}</div><time class="t" datetime="${new Date(m.ts).toISOString()}" title="${tz}">${fmt(m.ts)}</time></div>`).join('')}</div>`;
+ l.innerHTML=`<div class="col">${all.map(m=>`<div class="row ${m.cls||''}"><div class="b">${m.cls?`<span class="tx">* ${esc(m.text)}</span>`:nk(m.by,m.me?'* '+esc(m.by):'&lt;'+esc(m.by)+'&gt;')+` <span class="tx">${md(m.text)}</span>`}</div>${tsOn()?`<time class="t" datetime="${new Date(m.ts).toISOString()}" title="${tz}">${fmt(m.ts)}</time>`:''}</div>`).join('')}</div>`;
  if(near)l.scrollTop=l.scrollHeight}
 async function logout(){await sb.auth.signOut();guest=false;me=null;go('login')}
 async function pollGuest(){const{data}=await sb.rpc('guest_messages',{since:new Date(noon()).toISOString()});if(data){msgs=data.map(norm);renderLog()}}
@@ -251,11 +252,12 @@ function settings(){const names=['ada','linus','grace','mx','tove'];
  <div class="tabs" role="tablist"><button role="tab" id="t1" aria-selected="true" aria-controls="p1">Personalization</button><button role="tab" id="t2" aria-selected="false" aria-controls="p2" tabindex="-1">General</button></div>
  <section id="p1" role="tabpanel" aria-labelledby="t1"><div class="field"><label for="mu">Name color muting: <b id="mv"></b></label><input id="mu" type="range" min="0" max="100" step="5"><span class="hint">0% is vibrant. 100% is greyscale.</span><div class="pv" id="pv"></div></div>
  <fieldset><legend>Theme</legend><label class="chk"><input type="radio" name="th" value="light"> Light</label><label class="chk"><input type="radio" name="th" value="dark"> Dark</label></fieldset></section>
- <section id="p2" role="tabpanel" aria-labelledby="t2" hidden><label class="chk"><input type="checkbox" id="wl"> Show the welcome message after login</label><p class="small muted">The message includes your last login date and time.</p></section>`,'set');
+ <section id="p2" role="tabpanel" aria-labelledby="t2" hidden><label class="chk"><input type="checkbox" id="ts"> Show timestamps</label><label class="chk"><input type="checkbox" id="wl"> Show the welcome message after login</label><p class="small muted">The message includes your last login date and time.</p></section>`,'set');
  const mu=$('#mu',d),pv=()=>{$('#mv',d).textContent=cfg().mute+'%';$('#pv',d).innerHTML=names.map(n=>`<span style="color:${nameColor(n)}">${n}</span>`).join('')};
  mu.value=cfg().mute;pv();$('#wl',d).checked=cfg().welcome;d.querySelector(`input[name=th][value=${isDark()?'dark':'light'}]`).checked=true;
  mu.oninput=()=>{cfg().mute=+mu.value;sv();pv();renderLog()};
  d.querySelectorAll('input[name=th]').forEach(r=>r.onchange=()=>{applyTheme(r.value);pv();renderLog()});
+$('#ts',d).checked=tsOn();$('#ts',d).onchange=e=>{try{localStorage.setItem('chatty:ts',e.target.checked?'1':'0')}catch(x){}renderLog()};
  $('#wl',d).onchange=e=>{cfg().welcome=e.target.checked;sv()};
  const tabs=[...d.querySelectorAll('[role=tab]')],pick=t=>{tabs.forEach(b=>{const on=b===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;$('#'+b.getAttribute('aria-controls'),d).hidden=!on});t.focus()};
  tabs.forEach((t,i)=>{t.onclick=()=>pick(t);t.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft')pick(tabs[(i+1)%2])}});
