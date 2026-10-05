@@ -159,10 +159,10 @@ ${field('p','Password','password','6 or more characters','autocomplete="new-pass
    if(!data)return bad('u','That username is taken.');
    pending={name:n,pw:p,remember:$('#r').checked};go('invite')})}}
 function invite(){auth('Invite code',`<h1>Wait, do I know you?</h1><p class="muted">Enter an invite code to finish creating <b>${esc(pending.name)}</b>.</p><form id="f" novalidate>
-${field('k','Invite code','text','Format: XXXXX-XXXXX-NORMAL. Codes expire after 3 days.','autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="18"')}
+${field('k','Invite code','text','Format: XXXXX-XXXXX-NORMAL. Codes expire after 3 days.','autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="26"')}
 <p class="err" id="e" role="alert"></p><button class="btn block" id="go">Continue</button></form>
 <p class="alt muted"><button class="link" data-go="request">I don’t have a code</button><button class="link" data-go="signup">Back</button></p>`);
- const M={format:'That isn’t a valid code format.',missing:'Invite code not found.',used:'This invite code was already used.',expired:'This invite code expired. Codes last 3 days.'};
+ const M={format:'That isn’t a valid code format.',missing:'Invite code not found.',used:'This invite code was already used.',expired:'This invite code expired.'};
  $('#k').oninput=e=>{e.target.value=e.target.value.toUpperCase()};
  $('#f').onsubmit=ev=>{ev.preventDefault();const k=$('#k').value.trim().toUpperCase();
   busy($('#go'),'Checking…',async()=>{
@@ -170,6 +170,12 @@ ${field('k','Invite code','text','Format: XXXXX-XXXXX-NORMAL. Codes expire after
    const{data:s,error}=await sb.rpc('check_invite',{c:k});
    if(error)return bad('k','Server problem: '+error.message);
    if(s!=='ok')return bad('k',M[s]||'Invalid code.');
+        if(k.endsWith('-TEMPINF')){let dv=localStorage.getItem('chatty:dev');if(!dv){dv=crypto.randomUUID();localStorage.setItem('chatty:dev',dv)}
+      const{data:c,error:ce}=await sb.rpc('claim_temp_slot',{c:k,n:pending.name,dev:dv});
+      if(ce)return bad('k','Could not reach the server. Try again.');
+      if(c==='limit')return bad('k','This device or network already has 4 accounts from temporary codes.');
+      if(c==='taken')return bad('k','That username was just taken. Go back and pick another.');
+      if(c!=='ok')return bad('k','That code can’t be used right now.')}
    localStorage.setItem(RK,pending.remember?'1':'0');
    const{data,error:e2}=await sb.auth.signUp({email:em(pending.name),password:pending.pw,options:{data:{username:pending.name,invite:k}}});
    if(e2)return bad('k','Could not create the account. Try another username or code.');
