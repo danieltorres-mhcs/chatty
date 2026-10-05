@@ -108,6 +108,13 @@ fieldset{border:0;padding:0;margin:0 0 16px}legend{padding:0;margin-bottom:8px}
 .tx,.row .n{overflow-wrap:anywhere;word-break:break-word}
 .row a{overflow-wrap:anywhere;word-break:break-all}
 @media(max-width:720px),(orientation:portrait){.row{display:block;padding:8px 0}.row .b{display:block;width:100%}.row time{display:block;width:100%;text-align:right;line-height:16px;margin-top:4px}}
+.mn{font-weight:700}
+.mn.me{background:color-mix(in srgb,var(--fg) 16%,transparent);border-radius:var(--r);padding:0 2px}
+.cwrap{position:relative}
+.sug{position:absolute;left:0;bottom:100%;margin-bottom:8px;min-width:200px;max-width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:4px 0;max-height:208px;overflow-y:auto;z-index:5}
+.sug[hidden]{display:none}
+.sug button{display:block;width:100%;height:32px;padding:4px 12px;border:0;background:none;text-align:left;line-height:24px;cursor:pointer;font-weight:700}
+.sug button[aria-selected=true],.sug button:hover{background:var(--line)}
 </style>
 </head>
 <body>
@@ -115,7 +122,7 @@ fieldset{border:0;padding:0;margin:0 0 16px}legend{padding:0;margin-bottom:8px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (()=>{
-const CFG={url:'https://pgpgmvtsfzvzcvblujpq.supabase.co',key:'sb_publishable_ju9WU0bLGsWUBwqnFaWcBg_FizBzr1k'};
+const CFG={url:'PASTE_PROJECT_URL_HERE',key:'PASTE_ANON_KEY_HERE'};
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const APP=$('#app'),RK='chatty:remember',em=n=>n.toLowerCase()+'@chatty-members.com';
@@ -125,6 +132,8 @@ let sb,view='login',pending=null,guest=false,me=null,users=[],msgs=[],local=[],c
 const cfg=()=>S;
 function saveSettings(){if(guest)return;clearTimeout(st);st=setTimeout(()=>sb.rpc('save_settings',{p:S.mute,w:S.welcome,m:S.muted}),400)}
 const sv=saveSettings;
+const MENTION=/(^|[^A-Za-z0-9_@-])@([A-Za-z0-9_-]{3,24})(?![A-Za-z0-9_-])/g;
+const pingsIn=t=>{const q=new Set();for(const m of t.matchAll(new RegExp(MENTION.source,'g'))){const u=users.find(x=>x.username.toLowerCase()===m[2].toLowerCase());if(u)q.add(u.username)}return q.size};
 const norm=m=>({id:m.id,by:m.username,text:m.body,me:m.is_action,ts:Date.parse(m.created_at)});
 async function busy(b,t,fn){const o=b.textContent;b.disabled=true;b.textContent=t;try{await fn()}finally{if(b.isConnected){b.disabled=false;b.textContent=o}}}
 function field(id,label,type,hint,extra=''){return`<div class="field"><label for="${id}">${label}</label><input id="${id}" name="${id}" type="${type}" ${extra}>${hint?`<span class="hint">${hint}</span>`:''}</div>`}
@@ -159,10 +168,10 @@ ${field('p','Password','password','6 or more characters','autocomplete="new-pass
    if(!data)return bad('u','That username is taken.');
    pending={name:n,pw:p,remember:$('#r').checked};go('invite')})}}
 function invite(){auth('Invite code',`<h1>Wait, do I know you?</h1><p class="muted">Enter an invite code to finish creating <b>${esc(pending.name)}</b>.</p><form id="f" novalidate>
-${field('k','Invite code','text','Format: XXXXX-XXXXX-NORMAL. Codes expire after 3 days.','autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="26"')}
+${field('k','Invite code','text','Codes expire after a few days.','autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="26"')}
 <p class="err" id="e" role="alert"></p><button class="btn block" id="go">Continue</button></form>
 <p class="alt muted"><button class="link" data-go="request">I don’t have a code</button><button class="link" data-go="signup">Back</button></p>`);
- const M={format:'That isn’t a valid code format.',missing:'Invite code not found.',used:'This invite code was already used.',expired:'This invite code expired.'};
+ const M={format:'That isn’t a valid code format.',missing:'Invite code not found.',used:'This invite code was already used.',expired:'This invite code has expired.'};
  $('#k').oninput=e=>{e.target.value=e.target.value.toUpperCase()};
  $('#f').onsubmit=ev=>{ev.preventDefault();const k=$('#k').value.trim().toUpperCase();
   busy($('#go'),'Checking…',async()=>{
@@ -170,12 +179,12 @@ ${field('k','Invite code','text','Format: XXXXX-XXXXX-NORMAL. Codes expire after
    const{data:s,error}=await sb.rpc('check_invite',{c:k});
    if(error)return bad('k','Server problem: '+error.message);
    if(s!=='ok')return bad('k',M[s]||'Invalid code.');
-        if(k.endsWith('-TEMPINF')){let dv=localStorage.getItem('chatty:dev');if(!dv){dv=crypto.randomUUID();localStorage.setItem('chatty:dev',dv)}
-      const{data:c,error:ce}=await sb.rpc('claim_temp_slot',{c:k,n:pending.name,dev:dv});
-      if(ce)return bad('k','Could not reach the server. Try again.');
-      if(c==='limit')return bad('k','This device or network already has 4 accounts from temporary codes.');
-      if(c==='taken')return bad('k','That username was just taken. Go back and pick another.');
-      if(c!=='ok')return bad('k','That code can’t be used right now.')}
+   {let dv=localStorage.getItem('chatty:dev');if(!dv){dv=crypto.randomUUID();localStorage.setItem('chatty:dev',dv)}
+    const{data:c,error:ce}=await sb.rpc('claim_temp_slot',{c:k,n:pending.name,dev:dv});
+    if(ce)return bad('k','Could not reach the server. Try again.');
+    if(c==='limit')return bad('k','This device or network already has 4 accounts from temporary codes.');
+    if(c==='taken')return bad('k','That username was just taken. Go back and pick another.');
+    if(c!=='ok')return bad('k','That code can’t be used right now.')}
    localStorage.setItem(RK,pending.remember?'1':'0');
    const{data,error:e2}=await sb.auth.signUp({email:em(pending.name),password:pending.pw,options:{data:{username:pending.name,invite:k}}});
    if(e2)return bad('k','Could not create the account. Try another username or code.');
@@ -203,7 +212,7 @@ function md(s){const bl=[],ph=h=>{bl.push(h);return'\u0000'+(bl.length-1)+'\u000
  s=esc(s).replace(/\n?```\n?([\s\S]*?)\n?```\n?/g,(_,c)=>ph(`<pre class="cb">${c}</pre>`)).replace(/`([^`\n]+)`/g,(_,c)=>ph(`<code>${c}</code>`));
  s=s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,(_,t,u)=>ph(A(u)+t+'</a>')).replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,(_,p,u)=>p+ph(A(u)+u+'</a>'))
   .replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g,'$1<i>$2</i>').replace(/~~([^~\n]+)~~/g,'<s>$1</s>')
-  .replace(/^&gt; ?(.*)$/gm,'<span class="q">$1</span>');
+  .replace(/^&gt; ?(.*)$/gm,'<span class="q">$1</span>').replace(MENTION,(m,p,n)=>{const u=users.find(x=>x.username.toLowerCase()===n.toLowerCase());return u?p+`<span class="mn${me&&u.username===me.username?' me':''}">@${n}</span>`:m});
  return s.replace(/\u0000(\d+)\u0000/g,(_,i)=>bl[i])}
 
 function renderLog(stick){const l=$('#log');if(!l)return;const near=stick||l.scrollHeight-l.scrollTop-l.clientHeight<80,from=Math.max(guest?noon():0,clearTs);
@@ -222,13 +231,13 @@ async function chat(){document.title='Chat · Chatty';local=[];msgs=[];clearTs=0
  APP.innerHTML=`<div class="shell"><header class="bar"><strong>Chatty</strong><div class="who"><span class="muted nm">${esc(g?'guest':me.username)}</span><button class="btn ghost" id="set">Settings</button>${g?'':'<button class="btn ghost" id="out">Log out</button>'}</div></header>
  <main class="pane"><div class="frame" id="log" role="log" aria-live="polite" aria-label="Messages"><div class="col"><div class="sk" style="width:60%"></div><div class="sk" style="width:80%"></div><div class="sk" style="width:45%"></div><div class="sk" style="width:70%"></div></div></div></main>
  <footer class="foot"><div class="col">${g?`<div class="guest"><strong>GUEST MODE</strong><button class="btn ghost" id="out">Log out</button></div>`:
- `<div class="composer"><textarea id="ta" rows="1" aria-label="Message" placeholder="Message, or /help"></textarea><button class="btn" id="send">Send</button></div><div class="meta small muted"><span id="note" role="status"></span><span id="cnt">0/1500</span></div>`}</div></footer></div>`;
+ `<div class="cwrap"><div class="sug" id="sug" role="listbox" aria-label="Mention suggestions" hidden></div><div class="composer"><textarea id="ta" rows="1" aria-label="Message" placeholder="Message, or /help"></textarea><button class="btn" id="send">Send</button></div></div><div class="meta small muted"><span id="note" role="status"></span><span id="cnt">0/1500</span></div>`}</div></footer></div>`;
  $('#out').onclick=logout;$('#set').onclick=settings;if(!g)composer();
  try{if(g){await pollGuest();timer=setInterval(pollGuest,30000)}else{
   prev=(await sb.rpc('touch_login')).data;
   const[u,m]=await Promise.all([sb.from('profiles').select('username,created_at'),sb.from('messages').select('*').order('created_at',{ascending:false}).limit(300)]);
   users=u.data||[];msgs=(m.data||[]).reverse().map(norm)}
-  chan=sb.channel('msgs').on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},x=>{if(!msgs.some(q=>q.id===x.new.id)){msgs.push(norm(x.new));renderLog()}})
+  chan=sb.channel('msgs').on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},x=>{if(!users.some(u=>u.username===x.new.username))users.push({username:x.new.username,created_at:x.new.created_at});if(!msgs.some(q=>q.id===x.new.id)){msgs.push(norm(x.new));renderLog()}})
    .on('postgres_changes',{event:'DELETE',schema:'public',table:'messages'},x=>{msgs=msgs.filter(q=>q.id!==x.old.id);renderLog()}).subscribe()}
  catch(e){local.push({cls:'sys',text:'Could not load messages. Reload to try again.',ts:Date.now()})}
  if(view!=='chat')return;
@@ -254,12 +263,13 @@ function settings(){const names=['ada','linus','grace','mx','tove'];
 
 function composer(){const ta=$('#ta'),btn=$('#send'),note=$('#note'),cnt=$('#cnt');
  const sys=t=>{local.push({cls:'cl',text:t,ts:Date.now()});renderLog(true)};
- const upd=()=>{const n=ta.value.trim().length;cnt.textContent=`${n}/1500`+(n>=2?` · ${delay(n)}s delay`:'');ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,128)+'px'};
+ const upd=()=>{const n=ta.value.trim().length;const pc=pingsIn(ta.value);cnt.textContent=`${n}/1500`+(n>=2?` · ${delay(n)+pc}s delay`:'')+(pc?` · ${pc}/5 pings`:'');ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,128)+'px'};
  const msg=(t,e)=>{note.textContent=t;note.className=e?'e':''};
- function lock(n){locked=true;btn.disabled=true;btn.textContent='Sending…';setTimeout(()=>{locked=false;btn.disabled=false;btn.textContent='Send';ta.focus()},delay(n)*1000)}
+ function lock(n,pc=0){locked=true;btn.disabled=true;btn.textContent='Sending…';setTimeout(()=>{locked=false;btn.disabled=false;btn.textContent='Send';ta.focus()},(delay(n)+pc)*1000)}
  async function post(t,act){if(t.length<2||t.length>1500){msg('Messages must be 2–1500 characters.',true);return false}
-  lock(t.length);const{data,error}=await sb.rpc('post_message',{b:t,act:!!act});
-  if(error){msg(/slow_down/.test(error.message)?'Too fast. Wait a moment.':'Could not send. Try again.',true);return false}
+  const pc=pingsIn(t);if(pc>5){msg('You can ping at most 5 people per message.',true);return false}
+  lock(t.length,pc);const{data,error}=await sb.rpc('post_message',{b:t,act:!!act});
+  if(error){msg(/too_many_pings/.test(error.message)?'You can ping at most 5 people per message.':/slow_down/.test(error.message)?'Too fast. Wait a moment.':'Could not send. Try again.',true);return false}
   if(data&&!msgs.some(m=>m.id===data.id)){msgs.push(norm(data));renderLog(true)}return true}
  function cmd(t){const p=t.slice(1).trim().split(/\s+/),k=p[0].toLowerCase(),a=p[1],rest=t.slice(1).trim().slice(p[0].length).trim();
   const find=n=>users.find(y=>y.username.toLowerCase()===(n||'').toLowerCase());
@@ -285,7 +295,20 @@ function composer(){const ta=$('#ta'),btn=$('#send'),note=$('#note'),cnt=$('#cnt
  async function send(){if(locked)return;const t=ta.value.trim();msg('');
   if(t.startsWith('/')){cmd(t);if(view==='chat'){ta.value='';upd()}return}
   if(await post(t)){ta.value='';upd()}}
- ta.oninput=upd;ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}};btn.onclick=send}
+ const sug=$('#sug');let sel=0,items=[],tok=null;
+ const token=()=>{const p=ta.selectionStart,m=/(^|[^A-Za-z0-9_@-])@([A-Za-z0-9_-]{0,24})$/.exec(ta.value.slice(0,p));return m?{start:p-m[2].length-1,end:p,q:m[2]}:null};
+ function drawSug(){sug.innerHTML=items.map((n,i)=>`<button type="button" role="option" aria-selected="${i===sel}" data-n="${esc(n)}" style="color:${nameColor(n)}">@${esc(n)}</button>`).join('')}
+ function showSug(){tok=token();if(!tok)return sug.hidden=true;const q=tok.q.toLowerCase(),all=users.map(u=>u.username).filter(n=>n!==me.username);
+  items=[...all.filter(n=>n.toLowerCase().startsWith(q)),...all.filter(n=>!n.toLowerCase().startsWith(q)&&n.toLowerCase().includes(q))].slice(0,6);
+  if(!items.length)return sug.hidden=true;sel=0;drawSug();sug.hidden=false}
+ function pickSug(n){const v=ta.value;ta.value=v.slice(0,tok.start)+'@'+n+' '+v.slice(tok.end);const c=tok.start+n.length+2;ta.setSelectionRange(c,c);sug.hidden=true;upd();ta.focus()}
+ sug.onmousedown=e=>{e.preventDefault();const b=e.target.closest('button');if(b)pickSug(b.dataset.n)};
+ ta.oninput=()=>{upd();showSug()};ta.onclick=showSug;ta.onblur=()=>setTimeout(()=>{sug.hidden=true},120);
+ ta.onkeydown=e=>{if(!sug.hidden){
+   if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();sel=(sel+(e.key==='ArrowDown'?1:items.length-1))%items.length;drawSug();return}
+   if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();pickSug(items[sel]);return}
+   if(e.key==='Escape'){e.preventDefault();sug.hidden=true;return}}
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}};btn.onclick=send}
 
 try{applyTheme(localStorage.getItem('chatty:theme'))}catch(e){}
 if(CFG.url.includes('PASTE')){auth('Setup needed','<h1>Setup needed</h1><p>Open index.html in a text editor and paste your Supabase project URL and anon key at the top of the script.</p>')}
