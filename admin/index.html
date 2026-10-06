@@ -11,8 +11,14 @@ main{max-width:640px;margin:0 auto;padding:32px 16px}h1{font-size:16px;margin:0 
 input,button{font:inherit;color:inherit;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:2px;background:var(--bg)}
 input{width:100%;margin-bottom:8px}button{background:var(--fg);color:var(--bg);border-color:var(--fg);cursor:pointer;margin:0 8px 8px 0}
 button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid var(--line);padding:12px;margin:8px 0}.e{color:var(--err)}
+.b2{background:transparent;color:var(--fg);border-color:var(--line)}
+textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:2px;padding:8px 12px;margin:4px 0 16px;resize:vertical}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px;z-index:5}
+.dlg{background:var(--bg);border:1px solid var(--line);border-radius:2px;padding:24px;max-width:520px;width:100%;max-height:100%;overflow-y:auto}
+.msgbox{white-space:pre-wrap;overflow-wrap:anywhere;cursor:pointer;border:1px solid var(--line);border-radius:2px;padding:12px;margin:8px 0 16px}
+.msgbox:hover{border-color:var(--fg)}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:2px;z-index:10}
 </style></head><body><main>
-<!-- Cheeky boy! 😜 -->
 <h1>Chatty admin</h1>
 <input id="p" type="password" placeholder="Admin passphrase" autocomplete="off">
 <button id="inv">Make invite code</button><button id="invt">Make temp invite (5 days)</button><button id="ref">Refresh lists</button>
@@ -21,25 +27,40 @@ button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;borde
 <h2>Delete a message (number from the list below)</h2><input id="mid" inputmode="numeric" placeholder="Message number"><button id="del">Delete message</button>
 <h2>Ban a user (deletes their account and messages)</h2><input id="bn" placeholder="Username"><button id="ban">Ban user</button>
 <h2>Unused invite codes</h2><div id="li">-</div><h2>Requests</h2><div id="lr">-</div><h2>Users</h2><pre id="lu">-</pre>
-<h2>Recent signups</h2><div id="ls">-</div>
-<h2>Recent messages</h2><div id="lm">-</div>
+<h2>Recent signups</h2><div id="ls">-</div><h2>Recent messages</h2><div id="lm">-</div>
 </main><script>
 const URL_='https://pgpgmvtsfzvzcvblujpq.supabase.co',KEY='sb_publishable_ju9WU0bLGsWUBwqnFaWcBg_FizBzr1k';
 const sb=supabase.createClient(URL_,KEY,{auth:{persistSession:false}}),$=s=>document.querySelector(s);
 const PK='chatty:admin-pass';
 try{$('#p').value=localStorage.getItem(PK)||''}catch(e){}
 $('#p').oninput=()=>{try{localStorage.setItem(PK,$('#p').value)}catch(e){}};
-  const CK='chatty:admin-confirm';
-   try{$('#cf').checked=localStorage.getItem(CK)!=='0'}catch(e){$('#cf').checked=true}
-   $('#cf').onchange=()=>{try{localStorage.setItem(CK,$('#cf').checked?'1':'0')}catch(e){}};
-   const ask=t=>!$('#cf').checked||confirm(t);
+const CK='chatty:admin-confirm';
+try{$('#cf').checked=localStorage.getItem(CK)!=='0'}catch(e){$('#cf').checked=true}
+$('#cf').onchange=()=>{try{localStorage.setItem(CK,$('#cf').checked?'1':'0')}catch(e){}};
+const ask=t=>!$('#cf').checked||confirm(t);
 const say=(t,e)=>{$('#msg').textContent=t;$('#msg').className=e?'e':''};
 async function run(fn,name,args){const{data,error}=await sb.rpc(fn,{p:$('#p').value,...args});if(error){say(error.message,1);return null}say(name+' done.');return data}
 async function refresh(){const d=await run('admin_overview','Refreshed');if(!d)return;
-   const li=$('#li');li.textContent=d.invites.length?'':'None';d.invites.forEach(i=>{const b=document.createElement('pre');b.textContent=i.code+'\n(made '+new Date(i.created_at).toLocaleString()+')\n';const x=document.createElement('button');x.textContent='Delete';x.onclick=()=>ask('Delete invite '+i.code+'?')&&run('admin_delete_invite','Invite deleted',{c:i.code}).then(refresh);b.appendChild(x);li.appendChild(b)}); const lr=$('#lr');lr.textContent=d.requests.length?'':'None';d.requests.forEach(r=>{const b=document.createElement('pre');b.textContent=new Date(r.created_at).toLocaleString()+'\nWHO: '+r.who+'\nCONTACT: '+r.contact+'\nWHY: '+r.why+'\n';const x=document.createElement('button');x.textContent='Dismiss';x.onclick=()=>run('admin_delete_request','Dismissed',{rid:r.id}).then(refresh);b.appendChild(x);lr.appendChild(b)});
-   const ls=$('#ls');ls.textContent=d.signups.length?'':'None';d.signups.forEach(g=>{const b=document.createElement('pre');b.textContent=new Date(g.created_at).toLocaleString()+'  '+g.username+'  ['+g.kind+']\nIP: '+(g.ip||'unknown')+(g.ip?'  ('+g.same_ip+' accounts from this IP)':'')+'\nDevice: '+(g.dev?g.dev.slice(0,8):'unknown')+'\n';const x=document.createElement('button');x.textContent='Ban';x.onclick=()=>ask('Ban '+g.username+'?')&&run('admin_ban','Banned',{n:g.username}).then(refresh);b.appendChild(x);ls.appendChild(b)});
-    const lm=$('#lm');lm.textContent=d.messages.length?'':'None';d.messages.forEach(m=>{const b=document.createElement('pre');b.textContent='#'+m.id+' <'+m.username+'> '+m.body+'\n';const x=document.createElement('button');x.textContent='Delete';x.onclick=()=>ask('Delete message #'+m.id+'?')&&run('admin_delete_message','Deleted',{mid:m.id}).then(refresh);b.appendChild(x);lm.appendChild(b)})}
-$('#inv').onclick=async()=>{const c=await run('admin_new_invite','Invite made');if(c){say('New code (valid 3 days): '+c);refresh()}};
+ const li=$('#li');li.textContent=d.invites.length?'':'None';d.invites.forEach(i=>{const b=document.createElement('pre');b.textContent=i.code+'\n(made '+new Date(i.created_at).toLocaleString()+')\n';const x=document.createElement('button');x.textContent='Delete';x.onclick=()=>ask('Delete invite '+i.code+'?')&&run('admin_delete_invite','Invite deleted',{c:i.code}).then(refresh);b.appendChild(x);li.appendChild(b)});
+ const lr=$('#lr');lr.textContent=d.requests.length?'':'None';d.requests.forEach(r=>{const b=document.createElement('pre');b.textContent=new Date(r.created_at).toLocaleString()+'\nWHO: '+r.who+'\nCONTACT: '+r.contact+'\nWHY: '+r.why+'\n';const x=document.createElement('button');x.textContent='Dismiss';x.onclick=()=>run('admin_delete_request','Dismissed',{rid:r.id}).then(refresh);const y=document.createElement('button');y.textContent='Response';y.onclick=()=>respond(r);b.appendChild(y);b.appendChild(x);lr.appendChild(b)});
+ $('#lu').textContent=d.users.join(', ')||'None';
+ const ls=$('#ls');ls.textContent=d.signups.length?'':'None';d.signups.forEach(g=>{const b=document.createElement('pre');b.textContent=new Date(g.created_at).toLocaleString()+'  '+g.username+'  ['+g.kind+']\nIP: '+(g.ip||'unknown')+(g.ip?'  ('+g.same_ip+' accounts from this IP)':'')+'\nDevice: '+(g.dev?g.dev.slice(0,8):'unknown')+'\n';const x=document.createElement('button');x.textContent='Ban';x.onclick=()=>ask('Ban '+g.username+'?')&&run('admin_ban','Banned',{n:g.username}).then(refresh);b.appendChild(x);ls.appendChild(b)});
+ const lm=$('#lm');lm.textContent=d.messages.length?'':'None';d.messages.forEach(m=>{const b=document.createElement('pre');b.textContent='#'+m.id+' <'+m.username+'> '+m.body+'\n';const x=document.createElement('button');x.textContent='Delete';x.onclick=()=>ask('Delete message #'+m.id+'?')&&run('admin_delete_message','Deleted',{mid:m.id}).then(refresh);b.appendChild(x);lm.appendChild(b)})}
+function toast(t){const e=document.createElement('div');e.className='toast';e.setAttribute('role','status');e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2500)}
+async function copy(t){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}}
+function respond(r){const d=document.createElement('div');d.className='scrim';d.innerHTML='<div class="dlg" role="dialog" aria-modal="true"><h2 style="margin:0 0 8px">Response</h2><p id="rw" style="margin:0 0 16px"></p><label for="rn">Note (optional)</label><textarea id="rn" rows="3"></textarea><button id="ra">Accept</button><button id="rd" class="b2">Decline</button><button id="rx" class="b2">Cancel</button></div>';
+ document.body.appendChild(d);const c=()=>d.remove(),q=s=>d.querySelector(s);d.onkeydown=e=>{if(e.key==='Escape')c()};d.onclick=e=>{if(e.target===d)c()};
+ q('#rw').textContent='Request from '+r.who+' ('+r.contact+')';q('#rx').onclick=c;q('#rn').focus();
+ const show=(kind,text)=>{const box=q('.dlg');box.innerHTML='<h2 style="margin:0 0 8px">'+kind+' message</h2><p style="margin:0 0 8px">Click the message to copy it.</p>';
+  const m=document.createElement('div');m.className='msgbox';m.textContent=text;m.tabIndex=0;m.setAttribute('role','button');
+  const go=async()=>{await copy(text);toast('Copied '+kind+' message');c()};m.onclick=go;m.onkeydown=e=>{if(e.key==='Enter')go()};
+  const x=document.createElement('button');x.className='b2';x.textContent='Close';x.onclick=c;box.append(m,x);m.focus()};
+ q('#ra').onclick=async e=>{const b=e.target,n=q('#rn').value.trim();b.disabled=true;b.textContent='Making code…';
+  const code=await run('admin_new_invite','Invite made');if(!code){b.disabled=false;b.textContent='Accept';return}
+  show('ACCEPT',`Dear ${r.who},\n\nYour invite request for Chatty has been accepted.\nYour invite code is\n${code}\nIt's best to copy and paste it, and don't share it with other people!\n`+(n?`\nA note has been attached:\n${n}\n`:'')+`\nSincerely,\nDani.`);refresh()};
+ q('#rd').onclick=()=>{const n=q('#rn').value.trim();
+  show('DECLINE',`Dear ${r.who},\n\nYour invite request for Chatty has been declined, sorry!\nYou may request again, but it's best not to because we declined it for a reason.\n`+(n?`\nA note has been added: ${n}\n`:'')+`\nSincerely,\nDani`)}}
+$('#inv').onclick=async()=>{const c=await run('admin_new_invite','Invite made');if(c){await refresh();say('New code (valid 3 days): '+c)}};
 $('#invt').onclick=async()=>{const c=await run('admin_new_temp_invite','Temp invite made');if(c){await refresh();say('New temp code (5 days, 4 accounts per device/network): '+c)}};
 $('#ref').onclick=refresh;
 $('#del').onclick=()=>ask('Delete message #'+$('#mid').value+'?')&&run('admin_delete_message','Delete',{mid:+$('#mid').value});
