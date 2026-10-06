@@ -59,7 +59,7 @@ function respond(r){const d=document.createElement('div');d.className='scrim';d.
   const code=await run('admin_new_invite','Invite made');if(!code){b.disabled=false;b.textContent='Accept';return}
   show('ACCEPT',`Dear ${r.who},\n\nYour invite request for Chatty has been accepted.\nYour invite code is\n${code}\nIt's best to copy and paste it, and don't share it with other people!\n`+(n?`\nA note has been attached:\n${n}\n`:'')+`\nSincerely,\nDani.`);refresh()};
  q('#rd').onclick=()=>{const n=q('#rn').value.trim();
-  show('DECLINE',`Dear ${r.who},\n\nYour invite request for Chatty has been declined, sorry!\nYou may request again, but it's best not to because we declined it for a reason.\n`+(n?`\nA note has been added: ${n}\n`:'')+`\nSincerely,\nDani`)}}
+  show('DECLINE',`Dear ${r.who},\n\nYour invite request for Chatty has been declined, sorry!\nYou may request again, but it's best not to because we declined it for a reason.\n`+(n?`\nA note has been added: ${n}\n`:'')+`\nSincerely,\nDani.`)}}
 $('#inv').onclick=async()=>{const c=await run('admin_new_invite','Invite made');if(c){await refresh();say('New code (valid 3 days): '+c)}};
 $('#invt').onclick=async()=>{const c=await run('admin_new_temp_invite','Temp invite made');if(c){await refresh();say('New temp code (5 days, 4 accounts per device/network): '+c)}};
 $('#ref').onclick=refresh;
