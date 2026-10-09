@@ -35,8 +35,6 @@ input[aria-invalid=true]{border-color:var(--err)}
 .chk{display:flex;gap:8px;align-items:center;margin-bottom:16px}
 .btn{height:40px;padding:0 16px;border:1px solid var(--fg);border-radius:var(--r);background:var(--fg);color:var(--bg);cursor:pointer;transition:opacity .12s}
 .btn:hover:not(:disabled){opacity:.85}.btn:disabled{opacity:.5;cursor:default}
-.logo{font-weight:700;color:inherit;text-decoration:none}
-.logo:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 .btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
 .btn.ghost:hover:not(:disabled){border-color:var(--fg);opacity:1}
 .btn.block{width:100%}
@@ -117,14 +115,16 @@ fieldset{border:0;padding:0;margin:0 0 16px}legend{padding:0;margin-bottom:8px}
 .sug[hidden]{display:none}
 .sug button{display:block;width:100%;height:32px;padding:4px 12px;border:0;background:none;text-align:left;line-height:24px;cursor:pointer;font-weight:700}
 .sug button[aria-selected=true],.sug button:hover{background:var(--line)}
+.logo{font-weight:700;color:inherit;text-decoration:none}
+.logo:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0"></script>
 <script>
 (()=>{
-const CFG={url:'https://pgpgmvtsfzvzcvblujpq.supabase.co',key:'sb_publishable_ju9WU0bLGsWUBwqnFaWcBg_FizBzr1k'};
+const CFG={url:'PASTE_PROJECT_URL_HERE',key:'PASTE_ANON_KEY_HERE'};
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const APP=$('#app'),RK='chatty:remember',em=n=>n.toLowerCase()+'@chatty-members.com';
@@ -148,9 +148,11 @@ function bad(id,msg){const e=$('#e');e.textContent=msg;const i=id&&$('#'+id);doc
 function go(v){clearInterval(timer);if(chan){sb.removeChannel(chan);chan=null}view=v;({login,signup,invite,request,chat})[v]()}
 function login(){auth('Log in',`<h1>Log in</h1><p class="muted">Pick up where you left off.</p><form id="f" novalidate>
 ${field('u','Username','text','','autocomplete="username" autocapitalize="off"')}${field('p','Password','password','','autocomplete="current-password"')}
-<label class="chk"><input type="checkbox" id="r"> Remember me</label><p class="err" id="e" role="alert"></p><button class="btn block" id="go">Log in</button></form>
+<label class="chk"><input type="checkbox" id="r"> Remember me</label><p class="err" id="e" role="alert"></p><button class="btn block" id="go">Log in</button>
+<button class="btn ghost block" id="pk" type="button" style="margin-top:8px">Log in with a passkey</button></form>
 <p class="alt muted">No account? <button class="link" data-go="signup">Create one</button></p>
 <p class="muted" style="margin-top:8px"><button class="link" id="gst">Just looking? View as guest</button></p>`);
+ $('#pk').onclick=()=>busy($('#pk'),'Waiting for passkey…',async()=>{localStorage.setItem(RK,$('#r').checked?'1':'0');try{const{error}=await sb.auth.signInWithPasskey();if(error)return bad('p','Passkey sign-in failed or was cancelled.');go('chat')}catch(e){bad('p','Passkeys aren’t available in this browser.')}});
  $('#gst').onclick=()=>{guest=true;go('chat')};
  $('#f').onsubmit=ev=>{ev.preventDefault();busy($('#go'),'Logging in…',async()=>{
   localStorage.setItem(RK,$('#r').checked?'1':'0');
@@ -251,18 +253,34 @@ function modal(html,cls){const d=document.createElement('div');d.className='scri
 function popup(){const[d,c]=modal(`<h1>Guest mode</h1><p>You can only view messages. Today’s messages are shown and reset at 12:00 pm.</p><button class="btn" id="ok">Got it</button>`);$('#ok',d).onclick=c;$('#ok',d).focus()}
 function settings(){const names=['ada','linus','grace','mx','tove'];
  const[d,c]=modal(`<div class="dh"><h1>Settings</h1><button class="btn ghost" id="x">Close</button></div>
- <div class="tabs" role="tablist"><button role="tab" id="t1" aria-selected="true" aria-controls="p1">Personalization</button><button role="tab" id="t2" aria-selected="false" aria-controls="p2" tabindex="-1">General</button></div>
+ <div class="tabs" role="tablist"><button role="tab" id="t1" aria-selected="true" aria-controls="p1">Personalization</button><button role="tab" id="t2" aria-selected="false" aria-controls="p2" tabindex="-1">General</button><button role="tab" id="t3" aria-selected="false" aria-controls="p3" tabindex="-1">Security</button></div>
  <section id="p1" role="tabpanel" aria-labelledby="t1"><div class="field"><label for="mu">Name color muting: <b id="mv"></b></label><input id="mu" type="range" min="0" max="100" step="5"><span class="hint">0% is vibrant. 100% is greyscale.</span><div class="pv" id="pv"></div></div>
  <fieldset><legend>Theme</legend><label class="chk"><input type="radio" name="th" value="light"> Light</label><label class="chk"><input type="radio" name="th" value="dark"> Dark</label></fieldset></section>
- <section id="p2" role="tabpanel" aria-labelledby="t2" hidden><label class="chk"><input type="checkbox" id="ts"> Show timestamps</label><label class="chk"><input type="checkbox" id="wl"> Show the welcome message after login</label><p class="small muted">The message includes your last login date and time.</p></section>`,'set');
+ <section id="p2" role="tabpanel" aria-labelledby="t2" hidden><label class="chk"><input type="checkbox" id="ts"> Show timestamps</label><label class="chk"><input type="checkbox" id="wl"> Show the welcome message after login</label><p class="small muted">The message includes your last login date and time.</p></section>
+ <section id="p3" role="tabpanel" aria-labelledby="t3" hidden></section>`,'set');
  const mu=$('#mu',d),pv=()=>{$('#mv',d).textContent=cfg().mute+'%';$('#pv',d).innerHTML=names.map(n=>`<span style="color:${nameColor(n)}">${n}</span>`).join('')};
  mu.value=cfg().mute;pv();$('#wl',d).checked=cfg().welcome;d.querySelector(`input[name=th][value=${isDark()?'dark':'light'}]`).checked=true;
  mu.oninput=()=>{cfg().mute=+mu.value;sv();pv();renderLog()};
  d.querySelectorAll('input[name=th]').forEach(r=>r.onchange=()=>{applyTheme(r.value);pv();renderLog()});
-$('#ts',d).checked=tsOn();$('#ts',d).onchange=e=>{try{localStorage.setItem('chatty:ts',e.target.checked?'1':'0')}catch(x){}renderLog()};
+ $('#ts',d).checked=tsOn();$('#ts',d).onchange=e=>{try{localStorage.setItem('chatty:ts',e.target.checked?'1':'0')}catch(x){}renderLog()};
  $('#wl',d).onchange=e=>{cfg().welcome=e.target.checked;sv()};
- const tabs=[...d.querySelectorAll('[role=tab]')],pick=t=>{tabs.forEach(b=>{const on=b===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;$('#'+b.getAttribute('aria-controls'),d).hidden=!on});t.focus()};
- tabs.forEach((t,i)=>{t.onclick=()=>pick(t);t.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft')pick(tabs[(i+1)%2])}});
+ const tabs=[...d.querySelectorAll('[role=tab]')],pick=t=>{tabs.forEach(b=>{const on=b===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;$('#'+b.getAttribute('aria-controls'),d).hidden=!on});if(t.id==='t3')drawPk();t.focus()};
+ tabs.forEach((t,i)=>{t.onclick=()=>pick(t);t.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft')pick(tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length])}});
+ async function drawPk(){const box=$('#p3',d);box.textContent='';
+  const p=(t,c)=>{const e=document.createElement('p');e.className=c||'';e.textContent=t;box.appendChild(e);return e};
+  p('Passkeys let you log in with Face ID, Touch ID, Windows Hello or a security key instead of your password.','small muted');
+  if(guest){p('Log in to an account to add a passkey.','small muted');return}
+  const st=p('Loading…','small muted');let r;try{r=await sb.auth.passkey.list()}catch(e){r={error:e}}
+  if(r.error){st.textContent='Could not load your passkeys.';return}
+  const list=r.data||[];st.textContent=list.length?'':'No passkeys yet.';
+  list.forEach(k=>{const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px';
+   const nm=document.createElement('span');nm.textContent=(k.friendly_name||'Passkey')+' · '+fmt(Date.parse(k.created_at));nm.style.cssText='min-width:0;overflow-wrap:anywhere';
+   const rn=document.createElement('button');rn.className='btn ghost';rn.textContent='Rename';rn.onclick=async()=>{const n=prompt('Name this passkey',k.friendly_name||'');if(n&&n.trim()){await sb.auth.passkey.update({passkeyId:k.id,friendlyName:n.trim()});drawPk()}};
+   const rm=document.createElement('button');rm.className='btn ghost';rm.textContent='Remove';rm.onclick=async()=>{if(confirm('Remove this passkey?')){await sb.auth.passkey.delete({passkeyId:k.id});drawPk()}};
+   const bt=document.createElement('div');bt.style.cssText='display:flex;gap:8px;flex:none';bt.append(rn,rm);row.append(nm,bt);box.appendChild(row)});
+  const add=document.createElement('button');add.className='btn';add.textContent='Add a passkey';const er=p('','err');
+  add.onclick=()=>busy(add,'Waiting for passkey…',async()=>{er.textContent='';try{const{error}=await sb.auth.registerPasskey();if(error)er.textContent='Could not add the passkey. '+(error.message||'');else drawPk()}catch(e){er.textContent='Passkeys aren’t available in this browser.'}});
+  box.insertBefore(add,er)}
  $('#x',d).onclick=c;$('#x',d).focus()}
 
 function composer(){const ta=$('#ta'),btn=$('#send'),note=$('#note'),cnt=$('#cnt');
@@ -316,7 +334,7 @@ function composer(){const ta=$('#ta'),btn=$('#send'),note=$('#note'),cnt=$('#cnt
 
 try{applyTheme(localStorage.getItem('chatty:theme'))}catch(e){}
 if(CFG.url.includes('PASTE')){auth('Setup needed','<h1>Setup needed</h1><p>Open index.html in a text editor and paste your Supabase project URL and anon key at the top of the script.</p>')}
-else{sb=supabase.createClient(CFG.url,CFG.key,{auth:{storage:store,persistSession:true,autoRefreshToken:true}});
+else{sb=supabase.createClient(CFG.url,CFG.key,{auth:{storage:store,persistSession:true,autoRefreshToken:true,experimental:{passkey:true}}});
  sb.auth.getSession().then(({data})=>go(data.session?'chat':'login'))}
 })();
 </script>
