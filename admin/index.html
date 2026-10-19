@@ -27,7 +27,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 <h2>Delete a message (number from the list below)</h2><input id="mid" inputmode="numeric" placeholder="Message number"><button id="del">Delete message</button>
 <h2>Ban a user (deletes their account and messages)</h2><input id="bn" placeholder="Username"><button id="ban">Ban user</button>
 <h2>Unused invite codes</h2><div id="li">-</div><h2>Requests</h2><div id="lr">-</div><h2>Users</h2><pre id="lu">-</pre>
-<h2>Recent signups</h2><div id="ls">-</div><h2>Recent messages</h2><div id="lm">-</div>
+<h2>Recent signups</h2><div id="ls">-</div><h2>Deleted messages</h2><div id="ld">-</div><h2>Recent messages</h2><div id="lm">-</div>
 </main><script>
 const URL_='https://pgpgmvtsfzvzcvblujpq.supabase.co',KEY='sb_publishable_ju9WU0bLGsWUBwqnFaWcBg_FizBzr1k';
 const sb=supabase.createClient(URL_,KEY,{auth:{persistSession:false}}),$=s=>document.querySelector(s);
@@ -45,6 +45,7 @@ async function refresh(){const d=await run('admin_overview','Refreshed');if(!d)r
  const lr=$('#lr');lr.textContent=d.requests.length?'':'None';d.requests.forEach(r=>{const b=document.createElement('pre');b.textContent=new Date(r.created_at).toLocaleString()+'\nWHO: '+r.who+'\nCONTACT: '+r.contact+'\nWHY: '+r.why+'\n';const x=document.createElement('button');x.textContent='Dismiss';x.onclick=()=>run('admin_delete_request','Dismissed',{rid:r.id}).then(refresh);const y=document.createElement('button');y.textContent='Response';y.onclick=()=>respond(r);b.appendChild(y);b.appendChild(x);lr.appendChild(b)});
  $('#lu').textContent=d.users.join(', ')||'None';
  const ls=$('#ls');ls.textContent=d.signups.length?'':'None';d.signups.forEach(g=>{const b=document.createElement('pre');b.textContent=new Date(g.created_at).toLocaleString()+'  '+g.username+'  ['+g.kind+']\nIP: '+(g.ip||'unknown')+(g.ip?'  ('+g.same_ip+' accounts from this IP)':'')+'\nDevice: '+(g.dev?g.dev.slice(0,8):'unknown')+'\n';const x=document.createElement('button');x.textContent='Ban';x.onclick=()=>ask('Ban '+g.username+'?')&&run('admin_ban','Banned',{n:g.username}).then(refresh);b.appendChild(x);ls.appendChild(b)});
+ const ld=$('#ld'),dl=d.deleted||[];ld.textContent=dl.length?'':'None';dl.forEach(g=>{const b=document.createElement('pre');b.textContent=new Date(g.deleted_at).toLocaleString()+'  '+g.username+' (sent '+new Date(g.sent_at).toLocaleString()+')\n'+g.body;ld.appendChild(b)});
  const lm=$('#lm');lm.textContent=d.messages.length?'':'None';d.messages.forEach(m=>{const b=document.createElement('pre');b.textContent='#'+m.id+' <'+m.username+'> '+m.body+'\n';const x=document.createElement('button');x.textContent='Delete';x.onclick=()=>ask('Delete message #'+m.id+'?')&&run('admin_delete_message','Deleted',{mid:m.id}).then(refresh);b.appendChild(x);lm.appendChild(b)})}
 function toast(t){const e=document.createElement('div');e.className='toast';e.setAttribute('role','status');e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2500)}
 async function copy(t){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}}
