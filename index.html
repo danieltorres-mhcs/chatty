@@ -120,6 +120,15 @@ fieldset{border:0;padding:0;margin:0 0 16px}legend{padding:0;margin-bottom:8px}
 .sh{font-size:14px;line-height:24px;font-weight:700;margin:24px 0 8px}
 .code{white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid var(--line);border-radius:var(--r);padding:12px;margin:8px 0;font-weight:700}
 .dlg a{color:inherit;text-decoration:underline}
+:root{--cl:34%}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--cl:72%}}
+:root[data-theme="dark"]{--cl:72%}
+.dlg a.k1{color:hsl(210 40% var(--cl))}.dlg a.k2{color:hsl(140 36% var(--cl))}.dlg a.k3{color:hsl(165 36% var(--cl))}.dlg a.k4{color:hsl(230 36% var(--cl))}
+.dlg a.k5{color:hsl(85 34% var(--cl))}.dlg a.k6{color:hsl(355 38% var(--cl))}.dlg a.k7{color:hsl(28 42% var(--cl))}.dlg a.k8{color:hsl(275 32% var(--cl))}
+.dlg.set{display:flex;flex-direction:column;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px)}
+.dlg.set .dh,.dlg.set .tabs{flex:none}
+.dlg.set [role=tabpanel]{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:4px}
+@media(max-width:560px){.dlg.set{max-height:none;height:100%;overflow:hidden}}
 </style>
 </head>
 <body>
@@ -295,9 +304,9 @@ function settings(){const names=['ada','linus','grace','mx','tove'];
  <section id="p2" role="tabpanel" aria-labelledby="t2" hidden><label class="chk"><input type="checkbox" id="ts"> Show timestamps</label><label class="chk"><input type="checkbox" id="wl"> Show the welcome message after login</label><p class="small muted">The message includes your last login date and time.</p></section>
  <section id="p3" role="tabpanel" aria-labelledby="t3" hidden><div id="pkbox"></div><div id="pwbox"></div><div id="rcbox"></div></section>
  <section id="p4" role="tabpanel" aria-labelledby="t4" hidden>
-  <h2 class="sh" style="margin-top:0">Created by</h2><p><a href="https://dani-is.living-the.life" target="_blank" rel="noopener noreferrer">Dani</a></p>
-  <h2 class="sh">Domain</h2><p>Run by <a href="https://ziyaad.net" target="_blank" rel="noopener noreferrer">Ziyaad Saqlain</a> (int.yt)</p>
-  <h2 class="sh">Built with</h2><p><a href="https://supabase.com" target="_blank" rel="noopener noreferrer">Supabase</a> (accounts, live messages, passkeys)<br><a href="https://www.postgresql.org" target="_blank" rel="noopener noreferrer">PostgreSQL</a> (database, SQL and PL/pgSQL, pg_cron)<br>HTML, CSS and JavaScript<br>Web Crypto and WebAuthn (browser standards)<br><a href="https://github.com/parallax/jsPDF" target="_blank" rel="noopener noreferrer">jsPDF</a> (recovery code PDFs)<br><a href="https://www.jsdelivr.com" target="_blank" rel="noopener noreferrer">jsDelivr</a> (library delivery)<br><a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a> (hosting)</p>
+  <h2 class="sh" style="margin-top:0">Created by</h2><p><a class="k1" href="https://dani-is.living-the.life" target="_blank" rel="noopener noreferrer">Dani</a></p>
+  <h2 class="sh">Domain</h2><p>Run by <a class="k2" href="https://ziyaad.net" target="_blank" rel="noopener noreferrer">Ziyaad Saqlain</a> (int.yt)</p>
+  <h2 class="sh">Built with</h2><p><a class="k3" href="https://supabase.com" target="_blank" rel="noopener noreferrer">Supabase</a> (accounts, live messages, passkeys)<br><a class="k4" href="https://www.postgresql.org" target="_blank" rel="noopener noreferrer">PostgreSQL</a> (database, SQL and PL/pgSQL, pg_cron)<br>HTML, CSS and JavaScript<br><a class="k5" href="https://nodejs.org" target="_blank" rel="noopener noreferrer">Node.js</a> (tools and packages)<br>Web Crypto and WebAuthn (browser standards)<br><a class="k6" href="https://github.com/parallax/jsPDF" target="_blank" rel="noopener noreferrer">jsPDF</a> (recovery code PDFs)<br><a class="k7" href="https://www.jsdelivr.com" target="_blank" rel="noopener noreferrer">jsDelivr</a> (library delivery)<br><a class="k8" href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a> (code and hosting)</p>
  </section>`,'set');
  const mu=$('#mu',d),pv=()=>{$('#mv',d).textContent=cfg().mute+'%';$('#pv',d).innerHTML=names.map(n=>`<span style="color:${nameColor(n)}">${n}</span>`).join('')};
  mu.value=cfg().mute;pv();$('#wl',d).checked=cfg().welcome;d.querySelector(`input[name=th][value=${isDark()?'dark':'light'}]`).checked=true;
