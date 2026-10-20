@@ -36,6 +36,9 @@ input[aria-invalid=true]{border-color:var(--err)}
 .btn{height:40px;padding:0 16px;border:1px solid var(--fg);border-radius:var(--r);background:var(--fg);color:var(--bg);cursor:pointer;transition:opacity .12s}
 .btn:hover:not(:disabled){opacity:.85}.btn:disabled{opacity:.5;cursor:default}
 .btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.frame::-webkit-scrollbar,.dlg.set [role=tabpanel]::-webkit-scrollbar{width:8px;height:8px}
+.frame::-webkit-scrollbar-thumb,.dlg.set [role=tabpanel]::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.frame::-webkit-scrollbar-track,.dlg.set [role=tabpanel]::-webkit-scrollbar-track{background:transparent}
 .btn.ghost:hover:not(:disabled){border-color:var(--fg);opacity:1}
 .btn.block{width:100%}
 .link{background:none;border:0;padding:0;color:var(--fg);text-decoration:underline;cursor:pointer}
