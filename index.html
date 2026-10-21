@@ -14,15 +14,6 @@
  --font:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111;--fg:#eee;--mute:#9a9a9a;--line:#333;--err:#ff7a8a}}
-@supports selector(::-webkit-scrollbar){
- *::-webkit-scrollbar{width:8px;height:8px}
- *::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:transparent}
- *::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
- *::-webkit-scrollbar-thumb:hover{background:var(--mute)}
-}
-@supports not selector(::-webkit-scrollbar){
- *{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-}
 :root[data-theme="dark"]{--bg:#111;--fg:#eee;--mute:#9a9a9a;--line:#333;--err:#ff7a8a}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
@@ -179,6 +170,15 @@ select:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 :root[dir=rtl] .sug{left:auto;right:0}
 .gbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .gbtn svg{flex:none}
+@supports selector(::-webkit-scrollbar){
+ *::-webkit-scrollbar{width:8px;height:8px}
+ *::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:transparent}
+ *::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+ *::-webkit-scrollbar-thumb:hover{background:var(--mute)}
+}
+@supports not selector(::-webkit-scrollbar){
+ *{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+}
 </style>
 </head>
 <body>
@@ -192,7 +192,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const APP=$('#app'),RK='chatty:remember',em=n=>n.toLowerCase()+'@chatty-members.com';
 const pick=()=>localStorage.getItem(RK)==='1'?localStorage:sessionStorage;
 const store={getItem:k=>localStorage.getItem(k)??sessionStorage.getItem(k),setItem:(k,v)=>{localStorage.removeItem(k);sessionStorage.removeItem(k);pick().setItem(k,v)},removeItem:k=>{localStorage.removeItem(k);sessionStorage.removeItem(k)}};
-let sb,view='login',pending=null,guest=false,me=null,users=[],msgs=[],local=[],clearTs=0,timer=null,chan=null,bootMsg='',agoTimer=null,pres=null,online=[],locked=false,S={mute:30,welcome:true,muted:[]},st=null;
+let sb,view='login',pending=null,guest=false,me=null,users=[],msgs=[],local=[],clearTs=0,timer=null,chan=null,bootMsg='',inviteLink='',agoTimer=null,pres=null,online=[],locked=false,S={mute:30,welcome:true,muted:[]},st=null;
 const cfg=()=>S;
 function saveSettings(){if(guest)return;clearTimeout(st);st=setTimeout(()=>sb.rpc('save_settings',{p:S.mute,w:S.welcome,m:S.muted}),400)}
 const sv=saveSettings;
@@ -288,7 +288,7 @@ ${field('u','Username','text','','autocomplete="username" autocapitalize="off"')
   localStorage.setItem(RK,$('#r').checked?'1':'0');
   const{error}=await sb.auth.signInWithPassword({email:em($('#u').value.trim()),password:$('#p').value});
   if(error)return bad('p',error.code==='invalid_credentials'?'Wrong username or password.':error.status===429?'Too many tries. Wait a few minutes and try again.':'Could not log in ('+(error.code||error.message||'unknown error')+').');go('chat')})}}
-function signup(){auth('Create account',`<h1>Create account</h1><p class="muted">Pick a name. No email needed.</p><form id="f" novalidate>
+function signup(){auth('Create account',`<h1>Create account</h1><p class="muted">Pick a name. No email needed.</p>${inviteLink?'<p class="ok">You’re invited. Your invite link will be used automatically.</p>':''}<form id="f" novalidate>
 ${field('u','Username','text','3 or more characters. Letters, numbers, _ and -','autocomplete="username" autocapitalize="off"')}
 ${field('p','Password','password','6 or more characters','autocomplete="new-password"')}${field('c','Confirm password','password','','autocomplete="new-password"')}
 <label class="chk"><input type="checkbox" id="r"> Remember me</label><p class="err" id="e" role="alert"></p><button class="btn block" id="go">Make account</button></form>
@@ -301,7 +301,7 @@ ${field('p','Password','password','6 or more characters','autocomplete="new-pass
   busy($('#go'),'Making account…',async()=>{const{data,error}=await sb.rpc('username_free',{n});
    if(error)return bad('u','Server problem: '+error.message);
    if(!data)return bad('u','That username is taken.');
-   pending={name:n,pw:p,remember:$('#r').checked};go('invite')})}}
+   pending={name:n,pw:p,remember:$('#r').checked};if(inviteLink)return finishSignup(inviteLink,m=>bad('u',m));go('invite')})}}
 function recover(){auth('Reset password',`<h1>Reset password</h1><p class="muted">Use your recovery code to choose a new password.</p><form id="f" novalidate>
 ${field('u','Username','text','','autocomplete="username" autocapitalize="off"')}
 <div class="field"><label for="k">Recovery code</label><textarea id="k" rows="3" autocomplete="off" spellcheck="false"></textarea><span class="hint">15 words, separated by spaces or hyphens.</span></div>
@@ -318,6 +318,22 @@ ${field('p','New password','password','6 or more characters','autocomplete="new-
    localStorage.setItem(RK,'0');const{error:e2}=await sb.auth.signInWithPassword({email:em(n),password:p});
    if(e2)return go('login');
    try{await sb.rpc('set_recovery',{code,blob:await seal(code,p)})}catch(x){}go('chat')})}}
+const INV_M={format:'That isn’t a valid code format.',missing:'Invite code not found.',used:'This invite code was already used.',expired:'This invite code has expired.'};
+async function finishSignup(k,fail){
+ const{data:s,error}=await sb.rpc('check_invite',{c:k});
+ if(error)return fail('Server problem: '+error.message);
+ if(s!=='ok')return fail(INV_M[s]||'Invalid code.');
+ {let dv=localStorage.getItem('chatty:dev');if(!dv){dv=crypto.randomUUID();localStorage.setItem('chatty:dev',dv)}
+  const{data:c,error:ce}=await sb.rpc('claim_temp_slot',{c:k,n:pending.name,dev:dv});
+  if(ce)return fail('Could not reach the server. Try again.');
+  if(c==='limit')return fail('This device or network already has 4 accounts from temporary codes.');
+  if(c==='taken')return fail('That username was just taken. Go back and pick another.');
+  if(c!=='ok')return fail('That code can’t be used right now.')}
+ localStorage.setItem(RK,pending.remember?'1':'0');
+ const{data,error:e2}=await sb.auth.signUp({email:em(pending.name),password:pending.pw,options:{data:{username:pending.name,invite:k}}});
+ if(e2)return fail('Could not create the account. Try another username or code.');
+ if(!data.session)return fail('Account made, but Supabase wants email confirmation. Turn off "Confirm email" (see the steps).');
+ pending=null;inviteLink='';try{sessionStorage.removeItem('chatty:invite')}catch(e){}go('chat')}
 function invite(){auth('Invite code',`<h1>Wait, do I know you?</h1><p class="muted">Enter an invite code to finish creating <b>${esc(pending.name)}</b>.</p><form id="f" novalidate>
 ${field('k','Invite code','text','Codes expire after a few days.','autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="26"')}
 <p class="err" id="e" role="alert"></p><button class="btn block" id="go">Continue</button></form>
@@ -327,20 +343,7 @@ ${field('k','Invite code','text','Codes expire after a few days.','autocomplete=
  $('#f').onsubmit=ev=>{ev.preventDefault();const k=$('#k').value.trim().toUpperCase();
   busy($('#go'),'Checking…',async()=>{
    if(k==='GUEST'){pending=null;guest=true;return go('chat')}
-   const{data:s,error}=await sb.rpc('check_invite',{c:k});
-   if(error)return bad('k','Server problem: '+error.message);
-   if(s!=='ok')return bad('k',M[s]||'Invalid code.');
-   {let dv=localStorage.getItem('chatty:dev');if(!dv){dv=crypto.randomUUID();localStorage.setItem('chatty:dev',dv)}
-    const{data:c,error:ce}=await sb.rpc('claim_temp_slot',{c:k,n:pending.name,dev:dv});
-    if(ce)return bad('k','Could not reach the server. Try again.');
-    if(c==='limit')return bad('k','This device or network already has 4 accounts from temporary codes.');
-    if(c==='taken')return bad('k','That username was just taken. Go back and pick another.');
-    if(c!=='ok')return bad('k','That code can’t be used right now.')}
-   localStorage.setItem(RK,pending.remember?'1':'0');
-   const{data,error:e2}=await sb.auth.signUp({email:em(pending.name),password:pending.pw,options:{data:{username:pending.name,invite:k}}});
-   if(e2)return bad('k','Could not create the account. Try another username or code.');
-   if(!data.session)return bad('k','Account made, but Supabase wants email confirmation. Turn off "Confirm email" (see the steps).');
-   pending=null;go('chat')})}}
+   await finishSignup(k,m=>bad('k',m))})}}
 function request(){auth('Request an invite',`<h1>Request an invite</h1><p class="muted">A person reads every request. If approved, a code is sent to your contact.</p><form id="f" novalidate>
 <div class="field"><label for="w">Why do you want to join?</label><textarea id="w" rows="3"></textarea></div>
 ${field('a','Who are you?','text','A name or handle is fine','autocomplete="off"')}${field('t','Where can we contact you?','text','Email, handle, anything that reaches you','autocomplete="off"')}
@@ -607,11 +610,18 @@ function composer(){const ta=$('#ta'),btn=$('#send'),note=$('#note'),cnt=$('#cnt
 try{applyTheme(localStorage.getItem('chatty:theme'))}catch(e){}applyPrefs();startI18n();
 if(CFG.url.includes('PASTE')){auth('Setup needed','<h1>Setup needed</h1><p>Open index.html in a text editor and paste your Supabase project URL and anon key at the top of the script.</p>')}
 else{sb=supabase.createClient(CFG.url,CFG.key,{auth:{storage:store,persistSession:true,autoRefreshToken:true,flowType:'pkce',experimental:{passkey:true}}});
+ let il='';{const q2=new URLSearchParams(location.search),h2=new URLSearchParams(location.hash.replace(/^#/,''));il=(q2.get('invite')||h2.get('invite')||'').trim().toUpperCase();
+  if(il){q2.delete('invite');h2.delete('invite');try{history.replaceState(null,'',location.pathname+(q2.toString()?'?'+q2:'')+(h2.toString()?'#'+h2:''))}catch(e){}}}
+ try{if(il&&/^(GUEST|[A-Z0-9]{5}-[A-Z0-9]{5}-NORMAL|[A-Z0-9]{6}-[A-Z0-9]{5}-[A-Z0-9]{5}-TEMPINF)$/.test(il))sessionStorage.setItem('chatty:invite',il);else il='';inviteLink=il||sessionStorage.getItem('chatty:invite')||''}catch(e){inviteLink=il}
  const oq=new URLSearchParams(location.search),oh=new URLSearchParams(location.hash.replace(/^#/,'')),oerr=oq.get('error_description')||oh.get('error_description')||'';
  if(oerr){try{history.replaceState(null,'',location.pathname)}catch(e){}}
  const friendly=/database error|saving new user|bad username|bad invite/i.test(oerr)?'That Google account isn’t connected to a Chatty account. Log in with your password, then connect Google in Settings > Security.':oerr;
- sb.auth.getSession().then(({data})=>{let was=false;try{was=sessionStorage.getItem('chatty:linking')==='1';sessionStorage.removeItem('chatty:linking')}catch(e){}
-  if(data.session){bootMsg=friendly||(was?'Google account connected.':'');go('chat')}else{go('login');if(friendly)$('#e').textContent=friendly}})}
+ sb.auth.getSession().then(async({data})=>{let was=false;try{was=sessionStorage.getItem('chatty:linking')==='1';sessionStorage.removeItem('chatty:linking')}catch(e){}
+  const drop=()=>{inviteLink='';try{sessionStorage.removeItem('chatty:invite')}catch(e){}};
+  if(data.session){bootMsg=friendly||(was?'Google account connected.':'')||(inviteLink&&inviteLink!=='GUEST'?'You’re already logged in, so the invite link wasn’t used.':'');drop();go('chat')}
+  else if(inviteLink==='GUEST'){drop();guest=true;go('chat')}
+  else if(inviteLink){const{data:st}=await sb.rpc('check_invite',{c:inviteLink});if(st==='ok')go('signup');else{drop();go('login');$('#e').textContent='This invite link can’t be used. '+(INV_M[st]||'')}}
+  else{go('login');if(friendly)$('#e').textContent=friendly}})}
 })();
 </script>
 </body>
