@@ -14,6 +14,15 @@
  --font:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111;--fg:#eee;--mute:#9a9a9a;--line:#333;--err:#ff7a8a}}
+@supports selector(::-webkit-scrollbar){
+ *::-webkit-scrollbar{width:8px;height:8px}
+ *::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:transparent}
+ *::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+ *::-webkit-scrollbar-thumb:hover{background:var(--mute)}
+}
+@supports not selector(::-webkit-scrollbar){
+ *{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+}
 :root[data-theme="dark"]{--bg:#111;--fg:#eee;--mute:#9a9a9a;--line:#333;--err:#ff7a8a}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
