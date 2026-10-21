@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatty - an invite-only pseudonymous chat</title>
+<meta name="description" content="Chatty is a plain, invite-only chat room where everyone is pseudonymous.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23111'/%3E%3Cpath d='M8 10h16v9H15l-5 4v-4H8z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#fff;--fg:#111;--mute:#6b6b6b;--line:#d9d9d9}
+@media(prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--mute:#9a9a9a;--line:#333}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+main{max-width:680px;margin:0 auto;padding:48px 16px}
+h1{font-size:20px;line-height:1.4;margin:0 0 8px}h2{font-size:15px;margin:32px 0 8px}
+p,ul{margin:0 0 16px}ul{padding-left:20px}li{margin-bottom:4px}
+a{color:inherit;text-decoration:underline}.mute{color:var(--mute)}
+.btn{display:inline-flex;align-items:center;height:40px;padding:0 16px;border:1px solid var(--fg);border-radius:2px;background:var(--fg);color:var(--bg);text-decoration:none}
+.btn:focus-visible,a:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+nav{margin-top:48px;border-top:1px solid var(--line);padding-top:16px}nav a{margin-right:16px}
+</style>
+</head>
+<body><main>
+<h1>Chatty</h1>
+<p class="mute">A plain, invite-only chat room where everyone is pseudonymous.</p>
+<h2>What Chatty is</h2>
+<p>Chatty is a small web chat. You pick a username (no real name or email needed), join with an invite code, and talk in a single shared room. Messages are kept for two months and then deleted automatically.</p>
+<h2>What you can do</h2>
+<ul>
+<li>Chat in real time, with markdown, @mentions, slash commands, muting and your own colors and settings.</li>
+<li>Sign in with a password, a passkey, or a connected Google account.</li>
+<li>Browse as a guest without an account: guests can read today’s messages but cannot post.</li>
+<li>Change the language, text size, font and contrast to suit you.</li>
+</ul>
+<h2>How to join</h2>
+<p>New accounts need an invite code. You can request one from the sign-up page by telling us why you want to join and how to reach you.</p>
+<h2>About Google sign-in</h2>
+<p>Connecting a Google account is optional. It is used only to let you sign in to your existing Chatty account. See the <a href="/privacy">privacy policy</a> for exactly what is stored.</p>
+<p><a class="btn" href="/">Open Chatty</a></p>
+<p class="mute">Made by Dani. Contact: <a href="mailto:dani@mail.chatty.ro.to">dani@mail.chatty.ro.to</a></p>
+<nav><a href="/about">About</a><a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a><a href="/">Open Chatty</a></nav>
+</main></body></html>
